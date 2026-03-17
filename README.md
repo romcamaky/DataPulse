@@ -6,7 +6,7 @@ DataPulse profiles your skills, monitors the global data/AI ecosystem weekly, co
 
 ## Status
 
-🟡 **Module 1 — Profile Engine** (schema design phase)
+🟡 **Module 1 — Profile Engine** (schema deployed, building questionnaire)
 
 See [STATUS.md](docs/STATUS.md) for current state.
 
