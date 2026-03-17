@@ -93,6 +93,7 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Decided by:** Romi + Prompt Architect
 
 ---
+<<<<<<< HEAD
 
 ## 2026-03-17 | Reserved word: current_role → role_title
 
@@ -113,3 +114,5 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Decided by:** Romi decided, CTO proposed both options
 
 ---
+=======
+>>>>>>> a215d9e97337a418d223751dae073fdfd6ae12b2
