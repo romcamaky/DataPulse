@@ -13,3 +13,11 @@ dev = [
     "pytest",
     "ruff",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+Then re-install:
+```
+pip install -e .
