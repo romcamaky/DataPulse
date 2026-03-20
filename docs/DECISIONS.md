@@ -123,3 +123,14 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Also decided:** Added `confidence` column (1-5) on market_signals so Claude rates its extraction certainty. Costs zero extra tokens, enables Module 3 to filter low-confidence noise (WHERE confidence >= 3).
 
 **Decided by:** Romi + CTO
+
+
+## 2026-03-20 | Access control — invite-only registration
+
+**Decision:** DataPulse will use invite-only registration. Only whitelisted email addresses can sign up. No open self-registration.
+
+**Why:** The public GitHub repo exposes the codebase but not the infrastructure. However, once Module 5 adds a web frontend with Supabase Auth, open registration would let strangers trigger Claude API calls at the owner's expense. Invite-only (whitelist of allowed emails checked at signup) eliminates this risk. Current whitelist: Romi + Petr. Expanding later is a one-row insert.
+
+**Implementation (Module 5):** Supabase Auth + an `allowed_emails` table or Auth hook that rejects non-whitelisted signups. Exact mechanism TBD when we build Module 5.
+
+**Decided by:** Romi + CTO

@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "python-dotenv",
     "supabase",
+    "feedparser",
 ]
 
 [project.optional-dependencies]
@@ -16,8 +17,3 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-```
-
-Then re-install:
-```
-pip install -e .
