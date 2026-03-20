@@ -93,7 +93,6 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Decided by:** Romi + Prompt Architect
 
 ---
-<<<<<<< HEAD
 
 ## 2026-03-17 | Reserved word: current_role → role_title
 
@@ -114,5 +113,13 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Decided by:** Romi decided, CTO proposed both options
 
 ---
-=======
->>>>>>> a215d9e97337a418d223751dae073fdfd6ae12b2
+
+## 2026-03-20 | Module 2 schema — shared feed_items and market_signals
+
+**Decision:** feed_items and market_signals tables have NO user_id column. They are shared/global data.
+
+**Why:** All users consume the same 38 RSS feeds. Storing per-user duplicates wastes space and complicates deduplication. The personalization happens in Module 3 where dbt models JOIN market_signals (global) against user_skills (per-user) to produce individualized gap analysis. RLS allows all authenticated users to read; only the service role pipeline can write.
+
+**Also decided:** Added `confidence` column (1-5) on market_signals so Claude rates its extraction certainty. Costs zero extra tokens, enables Module 3 to filter low-confidence noise (WHERE confidence >= 3).
+
+**Decided by:** Romi + CTO

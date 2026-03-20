@@ -2,8 +2,8 @@
 
 **Last updated:** 2026-03-20
 
-## Current module: 1 — Profile Engine
-## Current phase: Profile seeded, onboarding script complete
+## Current module: 2 — Market Intelligence Agent
+## Current phase: Schema design
 ## Blocked on: Nothing
 
 ---
@@ -22,13 +22,15 @@
 - [x] Supabase Auth user created for Romi (real user_id replacing dev placeholder)
 - [x] Romi's profile seeded via SQL: 14 skills rated, 3 work experiences, 2 target roles, career narrative
 - [x] Column name mismatches fixed (role_title, company_name, confidence as text)
+- [x] Module 2 migration 003 drafted: `feed_items`, `market_signals` (shared RSS + Claude signals schema)
 
 ## What's next
 
-- [ ] Phase 4: Claude API integration — CV/LinkedIn parsing into structured profile data
+- [ ] Apply migration 003 in Supabase (SQL editor or linked migration workflow)
+- [ ] Phase 2–3: RSS collector (Python) and Claude extraction pipeline (service role writes)
+- [ ] Phase 4: Claude API integration — CV/LinkedIn parsing into structured profile data (Module 1 continuation)
 - [ ] Update onboarding script to support LinkedIn text paste → Claude API extraction
 - [ ] Seed skills table with any missing skills discovered during onboarding
-- [ ] Start Module 2: Market Intelligence Agent (RSS feed collector)
 
 ## Key decisions made during Phase 3
 
@@ -61,8 +63,8 @@ Actual column names in production (differs from some documentation):
 
 | Module | Status | Hours spent |
 |--------|--------|-------------|
-| 1 — Profile Engine | 🟡 In progress (profile seeded, script done) | ~6 |
-| 2 — Market Intelligence Agent | ⬜ Not started | 0 |
+| 1 — Profile Engine | 🟢 Done (profile seeded, onboarding script) | ~6 |
+| 2 — Market Intelligence Agent | 🟡 In progress (schema migration 003) | 0 |
 | 3 — Skill Gap Analyzer + Reports | ⬜ Not started | 0 |
 | 4 — Learning Path Updater + Testing | ⬜ Not started | 0 |
 | 5 — Multi-User App (capstone) | ⬜ Not started | 0 |
