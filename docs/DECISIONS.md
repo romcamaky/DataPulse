@@ -134,3 +134,32 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Implementation (Module 5):** Supabase Auth + an `allowed_emails` table or Auth hook that rejects non-whitelisted signups. Exact mechanism TBD when we build Module 5.
 
 **Decided by:** Romi + CTO
+
+
+## 2026-03-20 | RSS feed config — Python dict over database table
+
+**Decision:** Store the 31 RSS feed sources in a Python config file (`feeds_config.py`), not in a Supabase table.
+
+**Why:** No UI to manage feeds yet (Module 5 territory). A Python dict is simpler to update, version-controlled, and doesn't need RLS. Migration to a table later is trivial.
+
+**Decided by:** CTO recommended, Romi agreed
+
+---
+
+## 2026-03-20 | Signal extraction model — Haiku over Sonnet
+
+**Decision:** Use `claude-haiku-4-5-20251001` for market signal extraction, not Sonnet.
+
+**Why:** Signal extraction is structured data extraction (JSON output from article titles + summaries). Haiku is 3x cheaper and fast enough. Sonnet is reserved for Module 3 personalized recommendations where reasoning quality matters more.
+
+**Decided by:** CTO recommended, Romi agreed
+
+---
+
+## 2026-03-20 | Pipeline frequency — biweekly over weekly
+
+**Decision:** RSS collection + signal extraction runs every two weeks, not weekly.
+
+**Why:** For 1-2 users, career intelligence signals don't change week-to-week. Biweekly halves API cost and produces reports with more accumulated signal. Can switch to weekly with a one-line cron change if reports feel stale.
+
+**Decided by:** Romi decided after cost discussion with CTO
