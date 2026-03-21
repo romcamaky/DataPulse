@@ -3,7 +3,7 @@
 **Last updated:** 2026-03-20
 
 ## Current module: 2 — Market Intelligence Agent
-## Current phase: Schema design
+## Current phase: Complete
 ## Blocked on: Nothing
 
 ---
@@ -22,15 +22,18 @@
 - [x] Supabase Auth user created for Romi (real user_id replacing dev placeholder)
 - [x] Romi's profile seeded via SQL: 14 skills rated, 3 work experiences, 2 target roles, career narrative
 - [x] Column name mismatches fixed (role_title, company_name, confidence as text)
-- [x] Module 2 migration 003 drafted: `feed_items`, `market_signals` (shared RSS + Claude signals schema)
+- [x] Module 2 migration 003: `feed_items`, `market_signals` (shared RSS + Claude signals schema)
+- [x] **Module 2 Phase 2:** RSS collector (`collector.py`) — 31 feeds, dedupe on URL, Reddit/HN keyword filter
+- [x] **Module 2 Phase 3:** Claude Haiku signal extractor (`extractor.py`) — batch processing, skill mapping to `skills`, writes to `market_signals`
+- [x] **Module 2 Phase 4:** GitHub Actions workflow `market_intelligence.yml` — biweekly schedule (even ISO weeks) + manual `workflow_dispatch`, collector → extractor pipeline
+- [x] Initial extraction run produced **~920** `market_signals` rows (approximate; corpus grows with each run)
 
 ## What's next
 
-- [ ] Apply migration 003 in Supabase (SQL editor or linked migration workflow)
-- [ ] Phase 2–3: RSS collector (Python) and Claude extraction pipeline (service role writes)
-- [ ] Phase 4: Claude API integration — CV/LinkedIn parsing into structured profile data (Module 1 continuation)
+- [ ] **Module 3 — Skill Gap Analyzer + Reports:** join `market_signals` and user profile/skills, gap analysis, reporting surfaces
+- [ ] Phase 4 (Module 1 continuation): Claude API — CV/LinkedIn parsing into structured profile data
 - [ ] Update onboarding script to support LinkedIn text paste → Claude API extraction
-- [ ] Seed skills table with any missing skills discovered during onboarding
+- [ ] Seed `skills` with any missing skills discovered from extractor unmapped `skill_name_raw` values
 
 ## Key decisions made during Phase 3
 
@@ -64,7 +67,7 @@ Actual column names in production (differs from some documentation):
 | Module | Status | Hours spent |
 |--------|--------|-------------|
 | 1 — Profile Engine | 🟢 Done (profile seeded, onboarding script) | ~6 |
-| 2 — Market Intelligence Agent | 🟡 In progress (schema migration 003) | 0 |
+| 2 — Market Intelligence Agent | 🟢 Done (RSS + extractor + Actions pipeline) | — |
 | 3 — Skill Gap Analyzer + Reports | ⬜ Not started | 0 |
 | 4 — Learning Path Updater + Testing | ⬜ Not started | 0 |
 | 5 — Multi-User App (capstone) | ⬜ Not started | 0 |

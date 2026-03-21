@@ -6,19 +6,19 @@ DataPulse profiles your skills, monitors the global data/AI ecosystem weekly, co
 
 ## Status
 
-🟡 **Module 1 — Profile Engine** (schema deployed, building questionnaire)
+🟢 **Module 2 — Market Intelligence** is complete (RSS ingestion + Claude signal extraction + biweekly GitHub Actions).
 
 See [STATUS.md](docs/STATUS.md) for current state.
 
 ## How it works
 
 ```
-Every Sunday, automatically:
+Every other Sunday (UTC), automatically:
 
-RSS feeds (15-20 sources) → Claude API trend extraction → dbt transformation
-→ skill gap analysis → personalized recommendations → weekly report
+RSS feeds (31 sources) → Claude API signal extraction → dbt transformation (later)
+→ skill gap analysis → personalized recommendations → report
 
-Your effort: read the report, approve or reject suggestions. ~5 minutes/week.
+Your effort: read the report, approve or reject suggestions. ~5 minutes per cycle.
 ```
 
 ## Tech stack
@@ -29,8 +29,8 @@ Supabase (PostgreSQL + Auth + RLS) · dbt Core · Python · Claude API · GitHub
 
 | # | Module | Status |
 |---|--------|--------|
-| 1 | Profile Engine | 🟡 In progress |
-| 2 | Market Intelligence Agent | ⬜ Not started |
+| 1 | Profile Engine | 🟢 Done |
+| 2 | Market Intelligence Agent | 🟢 Done |
 | 3 | Skill Gap Analyzer + Reports | ⬜ Not started |
 | 4 | Learning Path Updater + Testing | ⬜ Not started |
 | 5 | Multi-User App (capstone) | ⬜ Not started |
