@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: mart_skill_gap_analysis
+    description: Ranked skill gaps per user for downstream recommendations.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - user_id
+              - skill_id
+    columns:
+      - name: gap_rank
+        tests:
+          - not_null
+      - name: priority_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["critical", "important", "nice_to_have"]
+
+  - name: mart_trend_summary
+    description: Top trending skills in the last 90 days.
+    columns:
+      - name: skill_display_name
+        tests:
+          - not_null
+      - name: trending_score
+        tests:
+          - not_null

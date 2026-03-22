@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: int_signals_enriched
+    description: Market signals enriched with skill hierarchy and feed metadata.
+    columns:
+      - name: signal_id
+        tests:
+          - unique
+          - not_null
+
+  - name: int_skill_market_demand
+    description: Aggregated market demand per canonical skill.
+    columns:
+      - name: skill_id
+        tests:
+          - unique
+          - not_null
+      - name: demand_score
+        tests:
+          - not_null
+
+  - name: int_user_skill_coverage
+    description: Per-user coverage vs market demand (cross join of users and demanded skills).
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - user_id
+              - skill_id
+    columns:
+      - name: gap_score
+        tests:
+          - not_null

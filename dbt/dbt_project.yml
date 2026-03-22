@@ -8,4 +8,7 @@ models:
   datapulse:
     staging:
       +materialized: view
-      +schema: public
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
