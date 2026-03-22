@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: datapulse
+    description: "DataPulse application tables in public schema"
+    schema: public
+    tables:
+      - name: skills
+      - name: user_profiles
+      - name: user_skills
+      - name: user_target_roles
+      - name: feed_items
+        loaded_at_field: fetched_at
+        freshness:
+          warn_after: { count: 3, period: day }
+          error_after: { count: 21, period: day }
+      - name: market_signals
+        loaded_at_field: extracted_at
+        freshness:
+          warn_after: { count: 3, period: day }
+          error_after: { count: 21, period: day }

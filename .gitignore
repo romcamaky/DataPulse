@@ -9,6 +9,7 @@ venv/
 .env
 
 # dbt
+dbt/profiles.yml
 dbt/target/
 dbt/dbt_packages/
 dbt/logs/

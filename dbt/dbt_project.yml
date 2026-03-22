@@ -1,0 +1,11 @@
+name: 'datapulse'
+version: '1.0.0'
+config-version: 2
+profile: 'datapulse'
+
+# Model configurations
+models:
+  datapulse:
+    staging:
+      +materialized: view
+      +schema: public
