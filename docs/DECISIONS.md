@@ -163,3 +163,52 @@ Append-only. Every architectural or product decision gets logged here with date,
 **Why:** For 1-2 users, career intelligence signals don't change week-to-week. Biweekly halves API cost and produces reports with more accumulated signal. Can switch to weekly with a one-line cron change if reports feel stale.
 
 **Decided by:** Romi decided after cost discussion with CTO
+
+
+## 2026-03-22 | Recommender RLS — INSERT restricted to service role
+
+**Decision:** `authenticated` role has INSERT denied (`WITH CHECK (false)`) on `recommendations`. Only the service role (used by the Python pipeline) can write recommendations.
+
+**Why:** Same pattern as `market_signals`. The recommender runs as a backend pipeline, not as an authenticated user. Allowing authenticated INSERT would open a privilege escalation vector in a multi-user app. Service role bypasses RLS by design — this is the correct Supabase pattern for server-side writes.
+
+**Decided by:** Cursor (proposed), CTO (approved)
+
+---
+
+## 2026-03-22 | Recommender prompt — framework exclusion list
+
+**Decision:** Recommender prompt must explicitly instruct Claude not to recommend LangChain, CrewAI, FastAPI, or Airflow as learning resources or tools.
+
+**Why:** These are excluded from the DataPulse tech stack by design (see 2026-03-17 decision). A recommendation to "learn LangChain" contradicts the architectural decisions already logged and would confuse the user. The model has no awareness of project-level constraints unless explicitly told.
+
+**Implementation:** Add a constraints block to the recommender system prompt: "Do not recommend the following tools: LangChain, CrewAI, FastAPI, Airflow. Prefer simpler alternatives that achieve the same outcome."
+
+**Decided by:** CTO observed in Module 3 output, Romi approved
+
+
+## 2026-03-22 | Module 4 scope — defer tests and approve/reject CLI
+
+**Decision:** Ship Module 4 without the pytest suite and approve/reject CLI.
+Both are deferred until the user profile is updated with real, complete data.
+
+**Why:** Tests written against sparse profile data lock in incomplete behavior.
+The approve/reject CLI only matters once recommendations are being acted on
+regularly. Neither omission blocks the pipeline or the portfolio story.
+
+**Deferred to:** Before Module 5 ships.
+
+**Decided by:** Romi
+
+---
+
+## 2026-03-22 | system-overview.md as living architecture document
+
+**Decision:** `docs/architecture/system-overview.md` is the single source of
+truth for system architecture. It must be updated whenever a new module ships
+or a significant architectural change is made.
+
+**Why:** Recruiters and interviewers read docs, not code. A maintained
+architecture document with a rendered Mermaid diagram is a stronger portfolio
+signal than comments scattered across files.
+
+**Decided by:** Romi + CTO

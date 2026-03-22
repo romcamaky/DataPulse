@@ -1,9 +1,9 @@
 # DataPulse — Current Status
 
-**Last updated:** 2026-03-20
+**Last updated:** 2026-03-22
 
-## Current module: 2 — Market Intelligence Agent
-## Current phase: Complete
+## Current module: 5 — Multi-User App (Capstone)
+## Current phase: Planning
 ## Blocked on: Nothing
 
 ---
@@ -13,61 +13,51 @@
 - [x] Product vision defined (5 modules, build order, weekly automated cycle)
 - [x] Tech stack decided (Supabase, dbt, Python, Claude API, GitHub Actions, Cursor)
 - [x] Repo strategy: new repo `DataPulse`, shared Supabase instance
-- [x] Skills taxonomy: hierarchical `skills` table with `parent_skill_id`, ~51 seed skills
-- [x] Module 1 schema deployed (migration 001): skills, user_profiles, user_skills, work_experience, work_experience_skills, user_target_roles
-- [x] Migration 002 deployed: user_certifications, certification_skills, JSONB columns on user_profiles
-- [x] Repo structure: src/datapulse/, migrations/, docs/, .github/workflows/
-- [x] Infrastructure: config.py (env loading), db.py (Supabase client), skills_mapper.py (canonical skill lookup with aliases)
-- [x] Onboarding questionnaire CLI script (5 sections: identity, work experience, skills, career goals, career story)
-- [x] Supabase Auth user created for Romi (real user_id replacing dev placeholder)
-- [x] Romi's profile seeded via SQL: 14 skills rated, 3 work experiences, 2 target roles, career narrative
-- [x] Column name mismatches fixed (role_title, company_name, confidence as text)
-- [x] Module 2 migration 003: `feed_items`, `market_signals` (shared RSS + Claude signals schema)
-- [x] **Module 2 Phase 2:** RSS collector (`collector.py`) — 31 feeds, dedupe on URL, Reddit/HN keyword filter
-- [x] **Module 2 Phase 3:** Claude Haiku signal extractor (`extractor.py`) — batch processing, skill mapping to `skills`, writes to `market_signals`
-- [x] **Module 2 Phase 4:** GitHub Actions workflow `market_intelligence.yml` — biweekly schedule (even ISO weeks) + manual `workflow_dispatch`, collector → extractor pipeline
-- [x] Initial extraction run produced **~920** `market_signals` rows (approximate; corpus grows with each run)
+- [x] Skills taxonomy: hierarchical `skills` table with `parent_skill_id`, ~50 seed skills
+- [x] Architecture principles defined (9 principles including automation-first, curriculum-aware)
+- [x] **Module 1 complete** — schema deployed (4 migrations), Romi's profile seeded
+- [x] **Module 2 complete** — RSS collector (37 feeds), Claude API trend extractor, GitHub Actions weekly cron
+- [x] **Module 3 complete** — dbt skill gap mart, recommender pipeline, personalized recommendations in Supabase
+- [x] **Module 4 complete** — report generator, auto-commit via GitHub Actions, system-overview.md with Mermaid diagram
 
 ## What's next
 
-- [ ] **Module 3 — Skill Gap Analyzer + Reports:** join `market_signals` and user profile/skills, gap analysis, reporting surfaces
-- [ ] Phase 4 (Module 1 continuation): Claude API — CV/LinkedIn parsing into structured profile data
-- [ ] Update onboarding script to support LinkedIn text paste → Claude API extraction
-- [ ] Seed `skills` with any missing skills discovered from extractor unmapped `skill_name_raw` values
+- [ ] Supabase Auth — enable email/password login and registration
+- [ ] RLS audit — verify all policies work correctly with real auth tokens
+- [ ] Web frontend — onboarding flow, dashboard, report viewer
+- [ ] Public/private profile views
+- [ ] Multi-user smoke test — register second user, verify data isolation
 
-## Key decisions made during Phase 3
+## Deferred (intentionally, revisit before Module 5 ships)
 
-- Onboarding simplified from 9 sections (~15 min) to 5 sections (~5 min) — only data that feeds Module 3 skill gap analysis
-- Profile seeded via direct SQL instead of questionnaire — faster for user #1, better UX will come in Module 5
-- user_languages and platform_access stored as JSONB on user_profiles (not separate tables)
-- user_certifications kept as separate table (needed for skill evidence joins in Module 3)
-- Real Supabase Auth user created instead of fake DEV_USER_ID — cleaner FK integrity
+- [ ] pytest suite — waiting for profile to be updated with real data
+- [ ] approve/reject CLI — `datapulse approve/reject <id>`
+- [ ] Feed health check — flag feeds failing 3+ weeks
+- [ ] Pipeline run logging — persist run metadata to Supabase
+- [ ] Recommender prompt constraints — exclude LangChain, Airflow from suggestions
+- [ ] Alias normalization — "AI agents" vs "AI Agents" deduplication in extractor
 
-## Schema note
+## Open decisions
 
-Actual column names in production (differs from some documentation):
-- `user_profiles.role_title` (not current_role — PostgreSQL reserved word)
-- `work_experience.role_title` (not job_title)
-- `work_experience.company_name` (not company)
-- `user_skills.confidence` is text: 'low' / 'medium' / 'high' (not numeric)
-- `work_experience` has no `experience_type` column
+- [ ] Frontend choice — Streamlit vs Cursor-built React for Module 5
+- [ ] Report delivery — GitHub commit only, or add email/Slack notification?
 
 ## Key numbers
 
 | Metric | Value |
 |--------|-------|
-| Build hours spent | ~6 |
-| Module 1 estimate | ~20h |
+| Build hours spent | ~75h (est.) |
+| Module 5 estimate | ~40h |
 | Total project estimate | ~145h (build) + ~70h (study) |
 | Weekly budget | 3–4h |
-| Target completion | ~12 months |
+| Target completion | ~8 months remaining |
 
 ## Module progress
 
 | Module | Status | Hours spent |
 |--------|--------|-------------|
-| 1 — Profile Engine | 🟢 Done (profile seeded, onboarding script) | ~6 |
-| 2 — Market Intelligence Agent | 🟢 Done (RSS + extractor + Actions pipeline) | — |
-| 3 — Skill Gap Analyzer + Reports | ⬜ Not started | 0 |
-| 4 — Learning Path Updater + Testing | ⬜ Not started | 0 |
-| 5 — Multi-User App (capstone) | ⬜ Not started | 0 |
+| 1 — Profile Engine | ✅ Complete | ~20h |
+| 2 — Market Intelligence Agent | ✅ Complete | ~20h |
+| 3 — Skill Gap Analyzer + Reports | ✅ Complete | ~20h |
+| 4 — Learning Path Updater + Testing | ✅ Complete | ~15h |
+| 5 — Multi-User App (capstone) | 🟡 In progress (planning) | 0 |
