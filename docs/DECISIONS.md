@@ -212,3 +212,28 @@ architecture document with a rendered Mermaid diagram is a stronger portfolio
 signal than comments scattered across files.
 
 **Decided by:** Romi + CTO
+
+---
+
+## 2026-03-23 | Learning Lab schema alignment
+
+**Decision:** Use actual migration schema for assessment_results and
+curriculum_progress instead of prompt spec columns.
+
+**Why:** assessment_results requires session_id (FK), not topic_id directly.
+curriculum_progress uses best_score + attempts, not score_percentage.
+Fallback logic was removed in favor of single correct code path.
+
+**Decided by:** CTO (schema mismatch caught before runtime)
+
+---
+
+## 2026-03-23 | topic_skill_mapping seed
+
+**Decision:** Map Topics 1-5 to sql, query_optimization, ctes,
+window_functions skills only.
+
+**Why:** These are the skills directly practiced in SQL topics.
+Broader skill inference deferred to Module 3 gap analysis.
+
+**Decided by:** CTO

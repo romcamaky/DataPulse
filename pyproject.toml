@@ -8,6 +8,8 @@ dependencies = [
     "supabase",
     "feedparser",
     "anthropic",
+    "streamlit>=1.45.0",
+    "plotly>=6.0.0",
 ]
 
 [project.optional-dependencies]

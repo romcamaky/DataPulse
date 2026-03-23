@@ -4,6 +4,8 @@ Personal AI career intelligence platform for data analysts and engineers.
 
 DataPulse profiles your skills, monitors the global data/AI ecosystem weekly, compares market demand against your profile, identifies skill gaps, and generates personalized learning recommendations — automatically.
 
+🚀 **Live app:** [link after deploy]
+
 ## Status
 
 🟢 **Module 2 — Market Intelligence** is complete (RSS ingestion + Claude signal extraction + biweekly GitHub Actions).
@@ -29,11 +31,15 @@ Supabase (PostgreSQL + Auth + RLS) · dbt Core · Python · Claude API · GitHub
 
 | # | Module | Status |
 |---|--------|--------|
-| 1 | Profile Engine | 🟢 Done |
-| 2 | Market Intelligence Agent | 🟢 Done |
-| 3 | Skill Gap Analyzer + Reports | ⬜ Not started |
-| 4 | Learning Path Updater + Testing | ⬜ Not started |
-| 5 | Multi-User App (capstone) | ⬜ Not started |
+| 1 | Profile Engine | ✅ Complete |
+| 2 | Market Intelligence Agent | ✅ Complete |
+| 3 | Skill Gap Analyzer + Reports | ✅ Complete |
+| 4 | Learning Path Updater + Testing (Learning Lab MVP) | ✅ Complete |
+| 5 | Multi-User App (capstone) | 🟡 In progress (web app deployed) |
+
+## Screenshot
+
+_Add app screenshot after deploy._
 
 ## Documentation
 

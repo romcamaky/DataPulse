@@ -19,13 +19,26 @@ def get_anthropic_api_key() -> str:
     Not validated at import time so modules like the RSS collector can run without
     ``ANTHROPIC_API_KEY`` in ``.env``.
     """
-    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    key = get_anthropic_key()
     if not key:
         raise RuntimeError(
             "Missing ANTHROPIC_API_KEY in .env. Required for datapulse.extractor "
             "and datapulse.recommender. Copy .env.example and add your Anthropic API key."
         )
     return key
+
+
+def get_anthropic_key() -> str:
+    """Get Anthropic API key from Streamlit secrets first, then environment."""
+    try:
+        import streamlit as st
+
+        if hasattr(st, "secrets") and "ANTHROPIC_API_KEY" in st.secrets:
+            return str(st.secrets["ANTHROPIC_API_KEY"]).strip()
+    except (ImportError, Exception):
+        pass
+
+    return os.getenv("ANTHROPIC_API_KEY", "").strip()
 
 
 def _find_project_root() -> Path:
@@ -62,6 +75,7 @@ load_dotenv(dotenv_path=_ENV_PATH)
 # Read Supabase configuration from environment variables.
 SUPABASE_URL: Final[str] = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY: Final[str] = os.getenv("SUPABASE_KEY", "")
+SUPABASE_ANON_KEY: Final[str] = os.getenv("SUPABASE_ANON_KEY", "")
 
 
 def _validate_required_env_var(name: str, value: str) -> None:
@@ -78,7 +92,32 @@ def _validate_required_env_var(name: str, value: str) -> None:
         )
 
 
-# Validate configuration eagerly at import time so failures surface early.
+def get_supabase_url() -> str:
+    """Get Supabase URL from Streamlit secrets first, then from environment."""
+    try:
+        import streamlit as st
+
+        if hasattr(st, "secrets") and "SUPABASE_URL" in st.secrets:
+            return str(st.secrets["SUPABASE_URL"]).strip()
+    except (ImportError, Exception):
+        pass
+
+    return os.getenv("SUPABASE_URL", "").strip()
+
+
+def get_supabase_anon_key() -> str:
+    """Get Supabase anon key for client-side auth (never use service role key)."""
+    try:
+        import streamlit as st
+
+        if hasattr(st, "secrets") and "SUPABASE_ANON_KEY" in st.secrets:
+            return str(st.secrets["SUPABASE_ANON_KEY"]).strip()
+    except (ImportError, Exception):
+        pass
+
+    return os.getenv("SUPABASE_ANON_KEY", "").strip()
+
+
+# Validate only the URL at import time so frontend apps can run with anon-only auth.
 _validate_required_env_var("SUPABASE_URL", SUPABASE_URL)
-_validate_required_env_var("SUPABASE_KEY", SUPABASE_KEY)
 

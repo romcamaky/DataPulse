@@ -26,6 +26,7 @@ Thumbs.db
 
 # Supabase
 supabase/.temp/
+.streamlit/secrets.toml
 
 dbt/.user.yml
 logs/
