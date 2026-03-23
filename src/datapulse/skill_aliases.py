@@ -17,13 +17,9 @@ SKILL_ALIASES: dict[str, str] = {
     "pyspark": "spark",
     "apache spark": "spark",
     "apache spark structured streaming": "spark",
-    "pandas": "pandas",
-    "numpy": "numpy",
     "scipy": "python",
     "pydantic": "python",
     "flask": "python",
-    "fastapi": "fastapi",
-    "pytorch": "pytorch",
     "jax": "pytorch",
 
     # --- SQL & Databases ---
@@ -35,11 +31,7 @@ SKILL_ALIASES: dict[str, str] = {
     "t-sql": "ms_sql_server",
     "tsql": "ms_sql_server",
     "pl/sql": "oracle",
-    "mysql": "mysql",
-    "oracle": "oracle",
-    "clickhouse": "clickhouse",
     "amazon redshift": "amazon_redshift",
-    "bigquery": "bigquery",
     "hbase": "data_engineering",
     "redis": "data_engineering",
     "database design": "data_modeling",
@@ -51,8 +43,6 @@ SKILL_ALIASES: dict[str, str] = {
     "pbi": "power_bi",
     "power bi": "power_bi",
     "powerbi": "power_bi",
-    "tableau": "tableau",
-    "excel": "excel",
     "excel/spreadsheet analytics": "excel",
     "google sheets": "excel",
     "business intelligence": "power_bi",
@@ -75,7 +65,6 @@ SKILL_ALIASES: dict[str, str] = {
     "amazon sagemaker": "aws",
     "amazon opensearch": "aws",
     "amazon opensearch service": "aws",
-    "gcp": "gcp",
     "google cloud": "gcp",
     "google cloud platform (gcp)": "gcp",
     "google cloud run": "gcp",
@@ -89,7 +78,6 @@ SKILL_ALIASES: dict[str, str] = {
     "microsoft fabric": "microsoft_fabric",
     "cloud computing": "aws",
     "cloud security": "aws",
-    "terraform": "terraform",
 
     # --- Data Engineering ---
     "etl": "etl_design",
@@ -358,7 +346,6 @@ SKILL_ALIASES: dict[str, str] = {
     "github": "git",
     "github actions": "github_actions",
     "gha": "github_actions",
-    "docker": "docker",
     "k8s": "docker",
     "kubernetes": "docker",
     "kubernetes (gke)": "docker",
@@ -366,7 +353,6 @@ SKILL_ALIASES: dict[str, str] = {
     "microservices architecture": "docker",
 
     # --- Cursor / IDE ---
-    "cursor": "cursor",
     "cursor ai": "cursor",
     "ide": "cursor",
 
@@ -405,9 +391,6 @@ SKILL_ALIASES: dict[str, str] = {
     "ai/data science": "data_science",
 
     # --- Other tools/languages ---
-    "java": "java",
-    "typescript": "typescript",
-    "javascript": "javascript",
     "js": "javascript",
     "node": "javascript",
     "json schema": "api_integration",
@@ -417,7 +400,6 @@ SKILL_ALIASES: dict[str, str] = {
     "realtime api development": "api_integration",
     "ollama": "llm_integration",
     "langchain": "llm_integration",
-    "streamlit": "streamlit",
     "polars": "pandas",
     "salesforce": "data_engineering",
 }
