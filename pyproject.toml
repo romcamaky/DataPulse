@@ -16,5 +16,8 @@ dev = [
     "ruff",
 ]
 
+[project.scripts]
+datapulse = "datapulse.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
