@@ -90,58 +90,31 @@ def _logout() -> None:
 
 
 def _render_auth_forms(client: Client) -> None:
-    """Render login/register tabs for unauthenticated users."""
+    """Render login form for unauthenticated users."""
     st.title("📊 DataPulse")
     st.caption("Personal AI Career Intelligence Platform")
 
-    login_tab, register_tab = st.tabs(["Login", "Register"])
+    with st.form("login_form"):
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_password")
+        submitted = st.form_submit_button("Login", use_container_width=True)
 
-    with login_tab:
-        with st.form("login_form"):
-            email = st.text_input("Email", key="login_email")
-            password = st.text_input("Password", type="password", key="login_password")
-            submitted = st.form_submit_button("Login", use_container_width=True)
-
-            if submitted:
-                if not email or not password:
-                    st.error("Please enter both email and password.")
-                else:
-                    try:
-                        response = client.auth.sign_in_with_password(
-                            {"email": email.strip(), "password": password}
-                        )
-                        if not getattr(response, "session", None):
-                            st.error("Login failed. Please check your credentials.")
-                        else:
-                            _store_auth_state(response, client)
-                            st.success("Logged in successfully.")
-                            st.rerun()
-                    except Exception as exc:  # noqa: BLE001
-                        st.error(f"Login failed: {exc}")
-
-    with register_tab:
-        with st.form("register_form"):
-            email = st.text_input("Email", key="register_email")
-            password = st.text_input("Password", type="password", key="register_password")
-            submitted = st.form_submit_button("Register", use_container_width=True)
-
-            if submitted:
-                if not email or not password:
-                    st.error("Please enter both email and password.")
-                else:
-                    try:
-                        response = client.auth.sign_up(
-                            {"email": email.strip(), "password": password}
-                        )
+        if submitted:
+            if not email or not password:
+                st.error("Please enter both email and password.")
+            else:
+                try:
+                    response = client.auth.sign_in_with_password(
+                        {"email": email.strip(), "password": password}
+                    )
+                    if not getattr(response, "session", None):
+                        st.error("Login failed. Please check your credentials.")
+                    else:
                         _store_auth_state(response, client)
-                        st.success(
-                            "Registration successful. If email confirmation is enabled, "
-                            "check your inbox before logging in."
-                        )
-                        if st.session_state.access_token:
-                            st.rerun()
-                    except Exception as exc:  # noqa: BLE001
-                        st.error(f"Registration failed: {exc}")
+                        st.success("Logged in successfully.")
+                        st.rerun()
+                except Exception as exc:  # noqa: BLE001
+                    st.error(f"Login failed: {exc}")
 
 
 def _ensure_user_session(client: Client) -> None:
