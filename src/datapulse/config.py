@@ -14,7 +14,7 @@ import os
 
 def get_anthropic_api_key() -> str:
     """
-    Return the Anthropic API key for Claude calls (extractor only).
+    Return the Anthropic API key for Claude calls (extractor, recommender).
 
     Not validated at import time so modules like the RSS collector can run without
     ``ANTHROPIC_API_KEY`` in ``.env``.
@@ -22,8 +22,8 @@ def get_anthropic_api_key() -> str:
     key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     if not key:
         raise RuntimeError(
-            "Missing ANTHROPIC_API_KEY in .env. Required for datapulse.extractor. "
-            "Copy .env.example and add your Anthropic API key."
+            "Missing ANTHROPIC_API_KEY in .env. Required for datapulse.extractor "
+            "and datapulse.recommender. Copy .env.example and add your Anthropic API key."
         )
     return key
 

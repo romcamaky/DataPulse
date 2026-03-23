@@ -13,53 +13,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from datapulse.db import get_client
-
-
-# Common aliases people use when typing skill names
-# Maps to the canonical 'name' field in the skills table
-SKILL_ALIASES: Dict[str, str] = {
-    "postgres": "postgresql",
-    "psql": "postgresql",
-    "pbi": "power_bi",
-    "power bi": "power_bi",
-    "powerbi": "power_bi",
-    "github": "git",
-    "github actions": "github_actions",
-    "gha": "github_actions",
-    "python3": "python",
-    "python 3": "python",
-    "py": "python",
-    "ms sql": "ms_sql_server",
-    "sql server": "ms_sql_server",
-    "mssql": "ms_sql_server",
-    "t-sql": "ms_sql_server",
-    "tsql": "ms_sql_server",
-    "js": "javascript",
-    "node": "javascript",
-    "k8s": "docker",
-    "kubernetes": "docker",
-    "gcp": "gcp",
-    "google cloud": "gcp",
-    "amazon web services": "aws",
-    "microsoft azure": "azure",
-    "dbt core": "dbt",
-    "apache spark": "spark",
-    "pyspark": "spark",
-    "apache airflow": "airflow",
-    "scikit-learn": "machine_learning",
-    "sklearn": "machine_learning",
-    "llm": "llm_integration",
-    "large language model": "llm_integration",
-    "chatgpt": "llm_integration",
-    "claude": "llm_integration",
-    "retrieval augmented generation": "rag",
-    "vector search": "rag",
-    "ci/cd": "ci_cd",
-    "cicd": "ci_cd",
-    "continuous integration": "ci_cd",
-    "vscode": "vs_code",
-    "visual studio code": "vs_code",
-}
+from datapulse.skill_aliases import SKILL_ALIASES
 
 
 class SkillsMapper:

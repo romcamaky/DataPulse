@@ -19,6 +19,7 @@ from anthropic import Anthropic
 from anthropic import APIError, APIConnectionError, RateLimitError
 
 from datapulse.config import get_anthropic_api_key
+from datapulse.skill_aliases import SKILL_ALIASES
 
 LOGGER = logging.getLogger("datapulse.extractor")
 
@@ -61,6 +62,10 @@ Return ONLY a JSON array, no other text. Each element:
 Rules:
 - article_index: 0-based index matching the input article order
 - skill_name_raw: the technology, tool, framework, or skill name as mentioned. Use common canonical names (e.g., "Python" not "python3", "PostgreSQL" not "postgres")
+- For specific AI products (ChatGPT, Claude, GPT-4, Gemini, etc.), return the product name as-is
+- For broad AI concepts, use these canonical names: "machine learning", "deep learning", "generative ai", "ai agents", "reinforcement learning", "natural language processing", "computer vision"
+- For data engineering concepts, use: "data engineering", "analytics engineering", "data governance", "data observability", "data mesh"
+- Prefer short, commonly used names over verbose descriptions
 - signal_type: one of "skill_demand" (jobs/hiring), "tool_adoption" (usage growing), "trend_emerging" (new technology/approach), "trend_declining" (being replaced), "regulatory_update" (laws/regulations affecting data work)
 - strength: 1 (briefly mentioned) to 5 (main topic of article)
 - confidence: 1 (vague/uncertain interpretation) to 5 (explicitly stated)
@@ -70,68 +75,6 @@ Rules:
 If an article has no relevant signals for data/analytics careers, return an empty array for that article (omit it from the output).
 Do not extract signals from articles about general news, sports, entertainment, or topics unrelated to data engineering, analytics, AI, or tech careers.
 """
-
-
-# Maps common vendor/product aliases to ``skills.name`` (lowercase underscored).
-# Values must exist in the seeded ``skills`` table (see migrations/001_module1_schema.sql).
-_SKILL_NAME_ALIASES: Final[dict[str, str]] = {
-    "postgres": "postgresql",
-    "postgresql": "postgresql",
-    "postgre sql": "postgresql",
-    "gh actions": "github_actions",
-    "github actions": "github_actions",
-    "github actions ci": "github_actions",
-    "scikit-learn": "python",
-    "sklearn": "python",
-    "pbi": "power_bi",
-    "power bi": "power_bi",
-    "dbt": "dbt",
-    "aws": "aws",
-    "amazon web services": "aws",
-    "gcp": "gcp",
-    "google cloud": "gcp",
-    "google cloud platform": "gcp",
-    "llm": "llm_integration",
-    "large language model": "llm_integration",
-    "large language models": "llm_integration",
-    "rag": "rag",
-    "retrieval augmented generation": "rag",
-    "retrieval-augmented generation": "rag",
-    "snowflake": "snowflake",
-    "databricks": "databricks",
-    "bigquery": "bigquery",
-    "bq": "bigquery",
-    "airflow": "airflow",
-    "apache airflow": "airflow",
-    "spark": "spark",
-    "apache spark": "spark",
-    "pandas": "pandas",
-    "numpy": "python",
-    "kubernetes": "docker",
-    "k8s": "docker",
-    "terraform": "ci_cd",
-    "vscode": "vs_code",
-    "vs code": "vs_code",
-    "visual studio code": "vs_code",
-    "supabase": "supabase",
-    "azure": "azure",
-    "microsoft azure": "azure",
-    "etl": "etl_design",
-    "elt": "etl_design",
-    "cicd": "ci_cd",
-    "ci/cd": "ci_cd",
-    "ci cd": "ci_cd",
-    "git": "git",
-    "docker": "docker",
-    "react": "react",
-    "javascript": "javascript",
-    "typescript": "javascript",
-    "sql": "sql",
-    "python": "python",
-    "streamlit": "streamlit",
-    "tableau": "tableau",
-    "snowflake sql": "snowflake",
-}
 
 
 @dataclass
@@ -199,8 +142,8 @@ def resolve_skill_id(skill_name_raw: str, index: SkillIndex) -> str | None:
         return index.by_display_lower[norm_display]
 
     alias_key = re.sub(r"\s+", " ", lower)
-    if alias_key in _SKILL_NAME_ALIASES:
-        target_name = _SKILL_NAME_ALIASES[alias_key]
+    if alias_key in SKILL_ALIASES:
+        target_name = SKILL_ALIASES[alias_key]
         return index.by_name.get(target_name)
 
     # Single-token shortcuts (e.g. "Postgres" → postgres alias already handled).
