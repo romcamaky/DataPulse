@@ -4,7 +4,7 @@ Personal AI career intelligence platform for data analysts and engineers.
 
 DataPulse profiles your skills, monitors the global data/AI ecosystem weekly, compares market demand against your profile, identifies skill gaps, and generates personalized learning recommendations — automatically.
 
-🚀 **Live app:** [link after deploy]
+🚀 **Live app:** https://datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app
 
 ## Status
 
