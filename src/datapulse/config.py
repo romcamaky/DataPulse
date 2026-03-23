@@ -118,6 +118,3 @@ def get_supabase_anon_key() -> str:
     return os.getenv("SUPABASE_ANON_KEY", "").strip()
 
 
-# Validate only the URL at import time so frontend apps can run with anon-only auth.
-_validate_required_env_var("SUPABASE_URL", SUPABASE_URL)
-
