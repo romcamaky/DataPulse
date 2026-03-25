@@ -183,6 +183,35 @@ def render_skill_gap(client: Client, user_id: str) -> None:
     figure.update_xaxes(dtick=1)
     st.plotly_chart(figure, use_container_width=True)
 
+    # Top skill gaps table (ranked, normalized 0-10) from the mart for user-friendly scoring.
+    try:
+        gap_result = (
+            client.table("mart_skill_gap_analysis")
+            .select("skill_display_name, demand_score, gap_score, gap_score_normalized, gap_rank")
+            .eq("user_id", user_id)
+            .order("gap_rank")
+            .limit(10)
+            .execute()
+        )
+        gap_rows: list[dict[str, Any]] = list(gap_result.data or [])
+    except Exception as e:  # noqa: BLE001
+        st.error(f"Could not load Top Skill Gaps: {e}")
+        return
+
+    if not gap_rows:
+        st.info("No skill gaps found yet.")
+        return
+
+    gap_df = pd.DataFrame(gap_rows)
+    if not gap_df.empty and "gap_score_normalized" in gap_df.columns:
+        gap_df = gap_df.rename(columns={"gap_score_normalized": "Gap score (0-10)"})
+        # Display normalized gap score instead of raw gap_score.
+        keep_cols = ["gap_rank", "skill_display_name", "demand_score", "Gap score (0-10)"]
+        gap_df = gap_df[[c for c in keep_cols if c in gap_df.columns]]
+
+    st.markdown("### Top Skill Gaps")
+    st.dataframe(gap_df, use_container_width=True, hide_index=True)
+
 
 def render_recommendations(client: Client, user_id: str) -> None:
     """Render top pending recommendations as bordered list cards."""

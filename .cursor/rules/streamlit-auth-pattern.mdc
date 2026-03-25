@@ -1,0 +1,12 @@
+---
+description: Streamlit pages must use shared auth client
+globs: pages/**/*.py
+alwaysApply: false
+---
+
+# Streamlit Auth Pattern
+
+- Always get the Supabase client via `get_authenticated_client()` from `src/datapulse/streamlit_auth.py`.
+- Do not create new unauthenticated clients in `pages/*.py` (avoid direct `create_client(...)`).
+- Use `st.session_state["user"]["id"]` (or helper functions that read it) for `user_id` in page queries.
+

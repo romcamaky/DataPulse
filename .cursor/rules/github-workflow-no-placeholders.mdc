@@ -1,0 +1,11 @@
+---
+description: GitHub workflows must be fully implemented (no placeholders)
+globs: .github/workflows/**/*.yml
+alwaysApply: false
+---
+
+# Workflow Implementation Rule
+
+- Every step that mentions a placeholder (e.g. “to be added later”, “placeholder only”) must be replaced with a real `run:` block before merging.
+- If a step needs DB access, it must use required `env:` values from GitHub `secrets` (DB host/user/password/name/port) or clearly document why it does not.
+

@@ -1,0 +1,17 @@
+---
+description: Commit and push completed work so remote and CI stay in sync
+alwaysApply: true
+---
+
+# Commit and push
+
+- After meaningful changes (code, dbt models, workflows, docs), **commit** with a clear message and **push** to the remote (e.g. `git push origin main` or your feature branch).
+- Avoid leaving fixes only locally when GitHub Actions, reviewers, or Streamlit Cloud should see the latest state.
+- Prefer short, scannable prefixes: `feat:`, `fix:`, `chore:`, `docs:`.
+
+```bash
+git add .
+git status   # sanity check
+git commit -m "feat: short description"
+git push origin main
+```

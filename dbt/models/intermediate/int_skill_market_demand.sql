@@ -41,7 +41,7 @@ aggregated as (
       (avg(strength)::numeric * 0.6 + avg(confidence)::numeric * 0.4)
       * ln(count(*)::numeric + 1.0),
       2
-    ) as demand_score,
+    ) as raw_demand_score,
     max(published_at::date) as latest_signal_date,
     coalesce(
       array_agg(distinct region) filter (where region is not null),
@@ -53,22 +53,34 @@ aggregated as (
     ) as source_categories
   from filtered
   group by skill_id
+),
+
+normalized as (
+  select
+    *,
+    max(raw_demand_score) over () as max_demand_score,
+    round(
+      raw_demand_score / nullif(max(raw_demand_score) over (), 0) * 10,
+      2
+    ) as demand_score
+  from aggregated
 )
 
 select
-  a.skill_id,
-  a.skill_display_name,
-  a.skill_category,
-  a.parent_skill_name,
-  a.signal_count,
-  a.avg_strength,
-  a.avg_confidence,
-  a.demand_score,
-  a.latest_signal_date,
+  n.skill_id,
+  n.skill_display_name,
+  n.skill_category,
+  n.parent_skill_name,
+  n.signal_count,
+  n.avg_strength,
+  n.avg_confidence,
+  n.raw_demand_score,
+  n.demand_score,
+  n.latest_signal_date,
   coalesce(tb.signal_type_breakdown, '{}'::jsonb) as signal_type_breakdown,
-  a.regions,
-  a.source_categories
-from aggregated as a
+  n.regions,
+  n.source_categories
+from normalized as n
 left join type_breakdown as tb
-  on a.skill_id = tb.skill_id
-order by a.demand_score desc
+  on n.skill_id = tb.skill_id
+order by n.demand_score desc

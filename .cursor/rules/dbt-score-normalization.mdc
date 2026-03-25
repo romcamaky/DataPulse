@@ -1,0 +1,12 @@
+---
+description: Dbt score normalization keeps backward compatibility
+globs: dbt/models/**/*.sql
+alwaysApply: false
+---
+
+# Dbt Score Normalization Contract
+
+- When normalizing any score to a new 0-10 scale, compute and expose a `raw_*` version for debugging (e.g. `raw_demand_score`).
+- In the mart layer, keep the original column name/value for backward compatibility unless the Streamlit dashboard is updated in the same change.
+- If an output column name changes (e.g. `gap_score` -> normalized value), update the Streamlit query/columns together so the UI does not break.
+

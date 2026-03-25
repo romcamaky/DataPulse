@@ -7,6 +7,7 @@
 with ranked as (
   select
     *,
+    max(gap_score) over (partition by user_id) as max_gap_score,
     row_number() over (
       partition by user_id
       order by gap_score desc
@@ -26,6 +27,10 @@ select
   demand_score,
   signal_count,
   gap_score,
+  round(
+    gap_score / nullif(max_gap_score, 0) * 10,
+    2
+  ) as gap_score_normalized,
   gap_rank,
   gap_category,
   case
