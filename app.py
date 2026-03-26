@@ -174,7 +174,7 @@ def _render_authenticated_shell() -> None:
 
     st.title("Welcome to DataPulse")
     st.write("Use the sidebar pages to navigate Dashboard, Learning Lab, Recommendations, and Reports.")
-    st.info("Module 5 Phase 1 skeleton is active. Feature pages will be expanded in upcoming phases.")
+    st.info("Use the sidebar to navigate to your Dashboard, Learning Lab, Recommendations, and Reports.")
 
 
 def main() -> None:

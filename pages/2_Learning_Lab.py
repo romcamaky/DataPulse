@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import random
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -75,13 +77,12 @@ def render_topic_selector(client: Client) -> tuple[str | None, str | None]:
     """Render topic and mode selectors, returning (topic_id, mode)."""
     st.title("Learning Lab")
 
-    # Load only topics 1-5 (seeded question scope).
+    # Load all curriculum topics.
     try:
         topics_result = (
             client.table("curriculum_topics")
             .select("id, topic_number, title")
             .gte("topic_number", 1)
-            .lte("topic_number", 5)
             .order("topic_number")
             .execute()
         )
@@ -136,10 +137,147 @@ def render_topic_selector(client: Client) -> tuple[str | None, str | None]:
     return topic_id, st.session_state.get("lab_mode")
 
 
-def load_random_question(client: Client, topic_id: str) -> dict[str, Any] | None:
-    """Load one random question for a topic."""
+def generate_questions(
+    client: Client,
+    topic_id: str,
+    topic_title: str,
+    count: int = 5,
+) -> None:
+    """Generate and insert new practice questions for a topic using Claude Haiku."""
+    # Resolve API key first so this function can fail fast and non-fatally.
+    api_key = get_anthropic_key()
+    if not api_key:
+        st.warning("Question generation skipped: missing ANTHROPIC_API_KEY.")
+        return
+
+    # Build generation prompt with strict JSON-only output requirements.
+    system_prompt = (
+        "You are a data engineering tutor. "
+        f"Generate exactly {count} practice questions for the topic: {topic_title}.\n\n"
+        "Return ONLY a JSON array with no markdown, no preamble. Each object:\n"
+        "{\n"
+        "  'question_type': one of write_query/predict_output/find_bug/conceptual,\n"
+        "  'difficulty': integer 1-3,\n"
+        "  'question_text': string,\n"
+        "  'sample_data': string or null (SQL CREATE+INSERT for write_query/predict_output),\n"
+        "  'expected_answer': string,\n"
+        "  'hints': string\n"
+        "}\n\n"
+        "Use realistic business scenarios (employees, orders, sales). "
+        "All SQL must be valid PostgreSQL. "
+        "Mix difficulty levels and question types."
+    )
+
+    try:
+        # Call Claude Haiku using the same API pattern as feedback calls.
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 2000,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": f"Topic: {topic_title}"}],
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        content = payload.get("content") or []
+        if not content:
+            st.warning("Question generation failed: Claude returned empty content.")
+            return
+
+        # Parse JSON array returned by Claude, with light fence cleanup fallback.
+        raw_text = str(content[0].get("text") or "").strip()
+        cleaned_text = raw_text.replace("```json", "").replace("```", "").strip()
+        parsed = json.loads(cleaned_text)
+        if not isinstance(parsed, list):
+            st.warning("Question generation failed: response was not a JSON array.")
+            return
+
+        # Build rows for deduplicated insert/upsert into questions_bank.
+        insert_rows: list[dict[str, Any]] = []
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            question_type = str(item.get("question_type") or "").strip()
+            difficulty_raw = item.get("difficulty")
+            question_text = str(item.get("question_text") or "").strip()
+            expected_answer = str(item.get("expected_answer") or "").strip()
+            hints = str(item.get("hints") or "").strip()
+            sample_data = item.get("sample_data")
+
+            # Skip malformed entries to keep generation non-fatal.
+            if not question_type or not question_text or not expected_answer:
+                continue
+
+            try:
+                difficulty = int(difficulty_raw)
+            except (TypeError, ValueError):
+                difficulty = 2
+            difficulty = max(1, min(3, difficulty))
+
+            insert_rows.append(
+                {
+                    "topic_id": topic_id,
+                    "question_type": question_type,
+                    "difficulty": difficulty,
+                    "question_text": question_text,
+                    "sample_data": sample_data if sample_data is not None else None,
+                    "expected_answer": expected_answer,
+                    "hints": hints,
+                }
+            )
+
+        if not insert_rows:
+            st.warning("Question generation failed: no valid question rows parsed.")
+            return
+
+        # Upsert with conflict target to avoid duplicates when regenerating.
+        client.table("questions_bank").upsert(
+            insert_rows,
+            on_conflict="topic_id,question_type,difficulty,question_text",
+            ignore_duplicates=True,
+        ).execute()
+
+    except json.JSONDecodeError as e:
+        st.warning(f"Question generation failed: invalid JSON from Claude ({e}).")
+    except Exception as e:  # noqa: BLE001
+        st.warning(f"Question generation failed: {e}")
+
+
+def _topic_title_or_fallback(client: Client, topic_id: str) -> str:
+    """Return topic title for generation prompts, with safe fallback text."""
     try:
         result = (
+            client.table("curriculum_topics")
+            .select("title")
+            .eq("id", topic_id)
+            .limit(1)
+            .execute()
+        )
+        rows = list(result.data or [])
+        if rows and rows[0].get("title"):
+            return str(rows[0]["title"])
+    except Exception:
+        pass
+    return f"Topic {topic_id}"
+
+
+def smart_load_question(
+    client: Client,
+    topic_id: str,
+    user_id: str,
+) -> dict[str, Any] | None:
+    """Load one question with priority: unseen -> previously incorrect -> any."""
+    # Load all questions for the topic.
+    try:
+        questions_result = (
             client.table("questions_bank")
             .select(
                 "id, topic_id, difficulty, question_type, question_text, "
@@ -148,14 +286,63 @@ def load_random_question(client: Client, topic_id: str) -> dict[str, Any] | None
             .eq("topic_id", topic_id)
             .execute()
         )
-        rows = list(result.data or [])
+        all_questions = list(questions_result.data or [])
     except Exception as e:  # noqa: BLE001
         st.error(f"Could not load questions: {e}")
         return None
 
-    if not rows:
+    if not all_questions:
         return None
-    return random.choice(rows)
+
+    # Load all answered question ids for this user.
+    try:
+        seen_result = (
+            client.table("assessment_results")
+            .select("question_id")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        seen_rows = list(seen_result.data or [])
+    except Exception:
+        seen_rows = []
+    seen_ids = {str(row.get("question_id")) for row in seen_rows if row.get("question_id")}
+
+    # Load question ids the user answered incorrectly.
+    try:
+        incorrect_result = (
+            client.table("assessment_results")
+            .select("question_id")
+            .eq("user_id", user_id)
+            .eq("is_correct", False)
+            .execute()
+        )
+        incorrect_rows = list(incorrect_result.data or [])
+    except Exception:
+        incorrect_rows = []
+    incorrect_ids = {
+        str(row.get("question_id")) for row in incorrect_rows if row.get("question_id")
+    }
+
+    # Build priority pools.
+    pool_a = [q for q in all_questions if str(q.get("id")) not in seen_ids]
+    pool_b = [q for q in all_questions if str(q.get("id")) in incorrect_ids]
+    pool_c = all_questions
+
+    # Trigger non-blocking generation when unseen pool is running low.
+    if len(pool_a) < 3:
+        topic_title = _topic_title_or_fallback(client, topic_id)
+        threading.Thread(
+            target=generate_questions,
+            args=(client, topic_id, topic_title, 5),
+            daemon=True,
+        ).start()
+
+    # Priority selection: unseen -> incorrect -> full rotation.
+    if pool_a:
+        return random.choice(pool_a)
+    if pool_b:
+        return random.choice(pool_b)
+    return random.choice(pool_c) if pool_c else None
 
 
 def render_question_display(question: dict[str, Any]) -> None:
@@ -461,17 +648,26 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
     """Render practice-mode workflow."""
     st.subheader("Practice Mode")
 
-    # Load a random question initially or when topic changed.
+    # Load a prioritized question initially or when topic changed.
     if not st.session_state.get("lab_question"):
-        st.session_state["lab_question"] = load_random_question(client, topic_id)
+        st.session_state["lab_question"] = smart_load_question(client, topic_id, user_id)
         st.session_state["lab_user_answer"] = ""
         st.session_state["lab_feedback"] = None
         st.session_state["lab_show_answer"] = False
 
     question = st.session_state.get("lab_question")
     if not question:
-        st.info("No questions found for this topic yet.")
-        return
+        # If no question exists yet, try generating a starter set for this topic.
+        topic_title = _topic_title_or_fallback(client, topic_id)
+        with st.spinner("Generating questions for this topic..."):
+            generate_questions(client, topic_id, topic_title, count=5)
+            question = smart_load_question(client, topic_id, user_id)
+            st.session_state["lab_question"] = question
+
+        # If generation still yields no questions, show a clear error.
+        if not question:
+            st.error("Could not generate questions. Try again.")
+            return
 
     render_question_display(question)
 
@@ -519,7 +715,7 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
     # Next question replaces current prompt and clears answer/feedback.
     with next_col:
         if st.button("Next question", use_container_width=True):
-            st.session_state["lab_question"] = load_random_question(client, topic_id)
+            st.session_state["lab_question"] = smart_load_question(client, topic_id, user_id)
             st.session_state["lab_user_answer"] = ""
             st.session_state["lab_feedback"] = None
             st.rerun()
@@ -544,8 +740,11 @@ def render_assess_mode(client: Client, user_id: str, topic_id: str) -> None:
     if not st.session_state.get("assess_questions"):
         questions = _load_assessment_question_set(client, topic_id)
         if not questions:
-            st.info("No assessment questions found for this topic yet.")
-            return
+            st.info(
+                "Questions for this topic are not available yet. "
+                "Select a topic from 1-5 to start learning."
+            )
+            st.stop()
         st.session_state["assess_questions"] = questions
         st.session_state["assess_index"] = 0
         st.session_state["assess_answers"] = []
