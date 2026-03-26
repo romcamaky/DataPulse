@@ -12,6 +12,11 @@ from typing import Any
 import streamlit as st
 from supabase import Client, create_client
 
+try:
+    from streamlit_cookies_controller import CookieController
+except ImportError:  # pragma: no cover
+    CookieController = None  # type: ignore[assignment]
+
 from datapulse.config import get_supabase_anon_key, get_supabase_url
 
 # Page config must be the first Streamlit command.
@@ -22,9 +27,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+COOKIE_CONTROLLER = None
+
 
 def _session_defaults() -> None:
     """Initialize auth-related state values once per browser session."""
+    # Restore auth tokens from cookies (Streamlit Cloud may restart the app).
+    global COOKIE_CONTROLLER
+    if not st.session_state.get("access_token"):
+        access_token = COOKIE_CONTROLLER.get("dp_access_token") if COOKIE_CONTROLLER else None
+        refresh_token = COOKIE_CONTROLLER.get("dp_refresh_token") if COOKIE_CONTROLLER else None
+        if access_token and refresh_token:
+            st.session_state.access_token = access_token
+            st.session_state.refresh_token = refresh_token
+
     if "access_token" not in st.session_state:
         st.session_state.access_token = None
     if "refresh_token" not in st.session_state:
@@ -72,6 +88,12 @@ def _store_auth_state(auth_response: Any, client: Client) -> None:
     st.session_state.refresh_token = refresh_token
     st.session_state.user = _extract_user_payload(user)
 
+    # Persist auth tokens in cookies so login survives app restarts.
+    global COOKIE_CONTROLLER
+    if COOKIE_CONTROLLER and access_token and refresh_token:
+        COOKIE_CONTROLLER.set("dp_access_token", access_token)
+        COOKIE_CONTROLLER.set("dp_refresh_token", refresh_token)
+
     # Keep a client bound to the authenticated session for RLS-scoped queries.
     if access_token and refresh_token:
         client.auth.set_session(access_token, refresh_token)
@@ -82,6 +104,12 @@ def _store_auth_state(auth_response: Any, client: Client) -> None:
 
 def _logout() -> None:
     """Clear all auth state and return to the login screen."""
+    # Clear cookies so the user is fully logged out across restarts.
+    global COOKIE_CONTROLLER
+    if COOKIE_CONTROLLER:
+        COOKIE_CONTROLLER.remove("dp_access_token")
+        COOKIE_CONTROLLER.remove("dp_refresh_token")
+
     st.session_state.access_token = None
     st.session_state.refresh_token = None
     st.session_state.user = None
@@ -151,6 +179,13 @@ def _render_authenticated_shell() -> None:
 
 def main() -> None:
     """Run the Streamlit application."""
+    # Initialize cookie controller for persistent authentication across restarts.
+    global COOKIE_CONTROLLER
+    if CookieController is not None:
+        COOKIE_CONTROLLER = CookieController()
+    else:  # pragma: no cover
+        COOKIE_CONTROLLER = None
+
     _session_defaults()
     supabase_client = _build_public_client()
     _ensure_user_session(supabase_client)
