@@ -173,7 +173,6 @@ def _render_authenticated_shell() -> None:
         _logout()
 
     st.title("Welcome to DataPulse")
-    st.write("Use the sidebar pages to navigate Dashboard, Learning Lab, Recommendations, and Reports.")
     st.info("Use the sidebar to navigate to your Dashboard, Learning Lab, Recommendations, and Reports.")
 
 
