@@ -8,7 +8,9 @@ DataPulse profiles your skills, monitors the global data/AI ecosystem weekly, co
 
 ## Status
 
-🟢 **Module 2 — Market Intelligence** is complete (RSS ingestion + Claude signal extraction + biweekly GitHub Actions).
+🟢 **All 5 modules shipped.** Live at https://datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app
+
+Fully automated biweekly pipeline — RSS ingestion → Claude API signal extraction → dbt transformation → skill gap analysis → personalized recommendations → weekly report. Includes an integrated Learning Lab with Claude-powered answer evaluation.
 
 See [STATUS.md](docs/STATUS.md) for current state.
 
@@ -17,8 +19,8 @@ See [STATUS.md](docs/STATUS.md) for current state.
 ```
 Every other Sunday (UTC), automatically:
 
-RSS feeds (31 sources) → Claude API signal extraction → dbt transformation (later)
-→ skill gap analysis → personalized recommendations → report
+RSS feeds (31 sources) → Claude Haiku signal extraction → dbt models (11 models, 30+ tests)
+→ skill gap analysis (normalized 0-10) → Claude Sonnet recommendations → markdown report
 
 Your effort: read the report, approve or reject suggestions. ~5 minutes per cycle.
 ```
@@ -35,11 +37,11 @@ Supabase (PostgreSQL + Auth + RLS) · dbt Core · Python · Claude API · GitHub
 | 2 | Market Intelligence Agent | ✅ Complete |
 | 3 | Skill Gap Analyzer + Reports | ✅ Complete |
 | 4 | Learning Path Updater + Testing (Learning Lab MVP) | ✅ Complete |
-| 5 | Multi-User App (capstone) | 🟡 In progress (web app deployed) |
+| 5 | Multi-User App (capstone) | ✅ Complete (live on Streamlit Cloud) |
 
 ## Screenshot
 
-_Add app screenshot after deploy._
+_Screenshots coming soon._
 
 ## Documentation
 
