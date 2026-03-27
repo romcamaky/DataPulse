@@ -115,10 +115,10 @@ def render_header(client: Client, user_id: str) -> None:
 
 
 def render_skill_gap(client: Client, user_id: str) -> None:
-    """Render skill levels as a horizontal plotly bar chart."""
+    """Render skill gaps as grouped horizontal bar charts by skill category."""
     st.subheader("Skill Gap Overview")
 
-    # Phase 2 decision (Variant C): show only current user level, no target bar.
+    # Load user's tracked skill levels.
     try:
         user_skills_result = (
             client.table("user_skills")
@@ -132,10 +132,12 @@ def render_skill_gap(client: Client, user_id: str) -> None:
         st.info("No skills tracked yet. Complete onboarding to see your skill gaps.")
         return
 
+    # Bail out early if the user has no skills tracked.
     if not user_skills_rows:
         st.info("No skills tracked yet. Complete onboarding to see your skill gaps.")
         return
 
+    # Load skill metadata (display name + category) so we can group charts by category.
     try:
         skill_ids = [str(row["skill_id"]) for row in user_skills_rows if row.get("skill_id")]
         if not skill_ids:
@@ -144,7 +146,7 @@ def render_skill_gap(client: Client, user_id: str) -> None:
 
         skills_result = (
             client.table("skills")
-            .select("id, display_name, name")
+            .select("id, display_name, name, category")
             .in_("id", skill_ids)
             .execute()
         )
@@ -153,64 +155,164 @@ def render_skill_gap(client: Client, user_id: str) -> None:
         st.error(f"Could not load skill labels: {e}")
         return
 
-    skill_map: dict[str, str] = {}
+    # Build an O(1) lookup for skill id -> (display name, category).
+    skill_meta_by_id: dict[str, dict[str, str]] = {}
     for skill in skills_rows:
         sid = skill.get("id")
         if sid is None:
             continue
         label = skill.get("display_name") or skill.get("name") or "Unknown skill"
-        skill_map[str(sid)] = str(label)
+        category_raw = str(skill.get("category") or "")
+        skill_meta_by_id[str(sid)] = {"label": str(label), "category_raw": category_raw}
 
+    # Reuse a single list of skill rows for chart generation.
     chart_rows: list[dict[str, Any]] = []
     for row in user_skills_rows:
         sid = row.get("skill_id")
         level = row.get("level")
         if sid is None or level is None:
             continue
-        chart_rows.append({"skill": skill_map.get(str(sid), str(sid)), "level": int(level)})
+        meta = skill_meta_by_id.get(str(sid)) or {"label": str(sid), "category_raw": ""}
+        chart_rows.append(
+            {
+                "skill_display_name": str(meta["label"]),
+                "category_raw": str(meta["category_raw"]),
+                "level": int(level),
+            }
+        )
 
+    # Stop if we could not build any skill rows.
     if not chart_rows:
         st.info("No skills tracked yet. Complete onboarding to see your skill gaps.")
         return
 
-    chart_df = pd.DataFrame(chart_rows).sort_values("level", ascending=True)
-    figure = px.bar(
-        chart_df,
-        x="level",
-        y="skill",
-        orientation="h",
-        color="level",
-        color_continuous_scale=["#F0FDFA", "#14B8A6", "#0D9488"],
-    )
-    figure.update_layout(showlegend=False, margin=dict(l=0, r=0, t=10, b=0))
-    figure.update_xaxes(dtick=1)
-    st.plotly_chart(figure, use_container_width=True)
-
-    # Top skill gaps table (ranked, normalized 0-10) from the mart for user-friendly scoring.
+    # Fetch gap data once and build a dict for O(1) lookups in chart building.
     try:
         gap_result = (
             client.table("mart_skill_gap_analysis")
-            .select("skill_display_name, demand_score, gap_score, gap_score_normalized, gap_rank")
+            .select(
+                "skill_display_name, demand_score, gap_score, gap_score_normalized, gap_rank"
+            )
             .eq("user_id", user_id)
-            .order("gap_rank")
-            .limit(10)
             .execute()
         )
         gap_rows: list[dict[str, Any]] = list(gap_result.data or [])
     except Exception as e:  # noqa: BLE001
         st.error(f"Could not load Top Skill Gaps: {e}")
-        return
+        gap_rows = []
 
-    if not gap_rows:
+    gap_by_skill: dict[str, dict[str, Any]] = {}
+    for row in gap_rows:
+        key = row.get("skill_display_name")
+        if key is None:
+            continue
+        gap_by_skill[str(key)] = row
+
+    # Category grouping order (raw values) and their display labels.
+    category_order = ["language", "framework", "tool", "concept", "soft_skill"]
+    category_label_map = {
+        "language": "Languages",
+        "framework": "Frameworks",
+        "tool": "Tools",
+        "concept": "Concepts",
+        "soft_skill": "Soft Skills",
+    }
+
+    # Build a chart per category.
+    for category_raw in category_order:
+        # Filter to the current user's skills for this category.
+        category_skills = [r for r in chart_rows if r.get("category_raw") == category_raw]
+        if not category_skills:
+            continue
+
+        # Sort skills by gap score descending (missing gap goes last).
+        def _gap_norm_0_5(skill_row: dict[str, Any]) -> float:
+            gap = gap_by_skill.get(skill_row["skill_display_name"])
+            if not gap:
+                return -1.0
+            gap_norm_0_10 = gap.get("gap_score_normalized")
+            if gap_norm_0_10 is None:
+                return -1.0
+            return float(gap_norm_0_10) / 2.0
+
+        category_skills_sorted = sorted(category_skills, key=_gap_norm_0_5, reverse=True)
+        ordered_skill_names = [r["skill_display_name"] for r in category_skills_sorted]
+
+        # Prepare long-form data for Plotly grouped bar chart.
+        records: list[dict[str, Any]] = []
+        for r in category_skills_sorted:
+            records.append(
+                {
+                    "skill": r["skill_display_name"],
+                    "score": float(r["level"]),
+                    "score_type": "Your level",
+                }
+            )
+            gap = gap_by_skill.get(r["skill_display_name"])
+            if gap:
+                gap_norm_0_10 = gap.get("gap_score_normalized")
+                if gap_norm_0_10 is not None:
+                    records.append(
+                        {
+                            "skill": r["skill_display_name"],
+                            "score": float(gap_norm_0_10) / 2.0,
+                            "score_type": "Gap score",
+                        }
+                    )
+
+        # Convert to DataFrame; maintain y-axis ordering via categorical dtype.
+        chart_df = pd.DataFrame(records)
+        if chart_df.empty:
+            continue
+        chart_df["skill"] = pd.Categorical(
+            chart_df["skill"], categories=ordered_skill_names, ordered=True
+        )
+
+        # Section header (human-readable).
+        st.markdown(f"### {category_label_map.get(category_raw, category_raw)}")
+
+        # Compact chart sizing: 40px per skill row, minimum 120px.
+        height = max(120, 40 * len(category_skills_sorted))
+
+        # Two side-by-side bars per skill (grouped).
+        figure = px.bar(
+            chart_df,
+            x="score",
+            y="skill",
+            orientation="h",
+            color="score_type",
+            barmode="group",
+            color_discrete_map={
+                "Your level": "#6366F1",
+                "Gap score": "#F97316",
+            },
+        )
+        figure.update_layout(
+            height=height,
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=True,
+        )
+        figure.update_xaxes(range=[0, 5], dtick=1)
+        st.plotly_chart(figure, use_container_width=True)
+
+    # Keep the existing "Top Skill Gaps" table below the charts.
+    if gap_rows:
+        # Table should be ranked (gap_rank); reuse the same columns as before.
+        gap_df = pd.DataFrame(gap_rows).sort_values("gap_rank").head(10)
+        if not gap_df.empty and "gap_score_normalized" in gap_df.columns:
+            gap_df = gap_df.rename(columns={"gap_score_normalized": "Gap score (0-10)"})
+            keep_cols = [
+                "gap_rank",
+                "skill_display_name",
+                "demand_score",
+                "Gap score (0-10)",
+            ]
+            gap_df = gap_df[[c for c in keep_cols if c in gap_df.columns]]
+    else:
         st.info("No skill gaps found yet.")
-        return
-
-    gap_df = pd.DataFrame(gap_rows)
-    if not gap_df.empty and "gap_score_normalized" in gap_df.columns:
-        gap_df = gap_df.rename(columns={"gap_score_normalized": "Gap score (0-10)"})
-        # Display normalized gap score instead of raw gap_score.
-        keep_cols = ["gap_rank", "skill_display_name", "demand_score", "Gap score (0-10)"]
-        gap_df = gap_df[[c for c in keep_cols if c in gap_df.columns]]
+        gap_df = pd.DataFrame(
+            columns=["gap_rank", "skill_display_name", "demand_score", "Gap score (0-10)"]
+        )
 
     st.markdown("### Top Skill Gaps")
     st.dataframe(gap_df, use_container_width=True, hide_index=True)
