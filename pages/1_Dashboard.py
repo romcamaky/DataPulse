@@ -223,12 +223,12 @@ def render_skill_gap(client: Client, user_id: str) -> None:
             )
 
         all_skill_rows_html = "".join(category_rows_html)
-        html_block = (
-            '<div style="background:#F0FDFA; border-radius:12px; padding:12px 16px;'
-            "            margin-bottom:16px;">"
-            f"{all_skill_rows_html}"
-            "</div>"
-        )
+        html_block = f"""
+<div style="background:#F0FDFA; border-radius:12px; padding:12px 16px;
+            margin-bottom:16px;">
+{all_skill_rows_html}
+</div>
+"""
 
         col, _ = st.columns([1, 1])
         with col:
