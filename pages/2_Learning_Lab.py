@@ -21,7 +21,7 @@ inject_global_styles()
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 CLAUDE_SYSTEM_PROMPT = (
-    "You are a data engineering tutor reviewing a student's answer. "
+    "You are a tutor reviewing a student's answer on data, AI, or business analysis topics. "
     "Be direct and constructive. Identify what is correct, what is wrong, "
     "and explain the fix. Keep response under 200 words."
 )
@@ -144,6 +144,7 @@ def generate_questions(
     client: Client,
     topic_id: str,
     topic_title: str,
+    topic_number: int,
     count: int = 5,
 ) -> None:
     """Generate and insert new practice questions for a topic using Claude Haiku."""
@@ -152,6 +153,31 @@ def generate_questions(
     if not api_key:
         st.warning("Question generation skipped: missing ANTHROPIC_API_KEY.")
         return
+
+    # Determine question style based on topic number.
+    # Topics 1-20: technical (SQL/Python/dbt/DE) — use code-based questions
+    # Topics 21-24: AI literacy — use scenario/conceptual questions
+    # Topics 25-28: business analysis — use scenario/case-study questions
+    if topic_number <= 20:
+        question_style = (
+            "Use realistic business scenarios (employees, orders, sales). "
+            "All SQL must be valid PostgreSQL. "
+            "Mix difficulty levels and question types including write_query and find_bug."
+        )
+    elif topic_number <= 24:
+        question_style = (
+            "Use realistic AI/data workflow scenarios. "
+            "Focus on conceptual and scenario-choice question types. "
+            "Questions should test practical understanding of AI tools, prompting, "
+            "and LLM API usage - not memorization."
+        )
+    else:
+        question_style = (
+            "Use realistic business analysis scenarios. "
+            "Focus on conceptual and scenario-choice question types. "
+            "Questions should test ability to translate business problems, "
+            "communicate with stakeholders, and structure requirements."
+        )
 
     # Build generation prompt with strict JSON-only output requirements.
     system_prompt = (
@@ -166,9 +192,7 @@ def generate_questions(
         "  'expected_answer': string,\n"
         "  'hints': string\n"
         "}\n\n"
-        "Use realistic business scenarios (employees, orders, sales). "
-        "All SQL must be valid PostgreSQL. "
-        "Mix difficulty levels and question types."
+        f"{question_style}"
     )
 
     try:
@@ -254,22 +278,28 @@ def generate_questions(
         st.warning(f"Question generation failed: {e}")
 
 
-def _topic_title_or_fallback(client: Client, topic_id: str) -> str:
-    """Return topic title for generation prompts, with safe fallback text."""
+def _topic_meta_or_fallback(client: Client, topic_id: str) -> tuple[str, int]:
+    """Return topic (title, number) for generation prompts with safe fallbacks."""
     try:
         result = (
             client.table("curriculum_topics")
-            .select("title")
+            .select("topic_number, title")
             .eq("id", topic_id)
             .limit(1)
             .execute()
         )
         rows = list(result.data or [])
-        if rows and rows[0].get("title"):
-            return str(rows[0]["title"])
+        if rows:
+            title = str(rows[0].get("title") or f"Topic {topic_id}")
+            topic_number_raw = rows[0].get("topic_number")
+            try:
+                topic_number = int(topic_number_raw)
+            except (TypeError, ValueError):
+                topic_number = 1
+            return title, topic_number
     except Exception:
         pass
-    return f"Topic {topic_id}"
+    return f"Topic {topic_id}", 1
 
 
 def smart_load_question(
@@ -333,10 +363,10 @@ def smart_load_question(
 
     # Trigger non-blocking generation when unseen pool is running low.
     if len(pool_a) < 3:
-        topic_title = _topic_title_or_fallback(client, topic_id)
+        topic_title, topic_number = _topic_meta_or_fallback(client, topic_id)
         threading.Thread(
             target=generate_questions,
-            args=(client, topic_id, topic_title, 5),
+            args=(client, topic_id, topic_title, topic_number, 5),
             daemon=True,
         ).start()
 
@@ -661,9 +691,9 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
     question = st.session_state.get("lab_question")
     if not question:
         # If no question exists yet, try generating a starter set for this topic.
-        topic_title = _topic_title_or_fallback(client, topic_id)
+        topic_title, topic_number = _topic_meta_or_fallback(client, topic_id)
         with st.spinner("Generating questions for this topic..."):
-            generate_questions(client, topic_id, topic_title, count=5)
+            generate_questions(client, topic_id, topic_title, topic_number, count=5)
             question = smart_load_question(client, topic_id, user_id)
             st.session_state["lab_question"] = question
 

@@ -356,7 +356,7 @@ def render_recommendations(client: Client, user_id: str) -> None:
 
 def render_curriculum_progress(client: Client, user_id: str) -> None:
     """Render all curriculum topics in a four-column card grid with status badges."""
-    st.subheader("Curriculum Progress (20 Topics)")
+    st.subheader("Curriculum Progress (28 Topics)")
 
     try:
         topics_result = (
