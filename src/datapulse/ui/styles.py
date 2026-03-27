@@ -11,8 +11,7 @@ def inject_global_styles() -> None:
 
     Call this once at the top of each page, after st.set_page_config() when present.
     """
-    st.markdown(
-        """
+    html_block = """
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
         <style>
         /* Base typography: keep body text consistent across all pages. */
@@ -91,6 +90,12 @@ def inject_global_styles() -> None:
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         }
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+
+    # Prefer st.html when available so CSS is injected as raw HTML, not markdown text.
+    if hasattr(st, "html"):
+        st.html(html_block)
+        return
+
+    # Fallback for older Streamlit versions.
+    st.markdown(html_block, unsafe_allow_html=True)
