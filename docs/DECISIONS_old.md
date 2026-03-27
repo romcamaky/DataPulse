@@ -124,19 +124,17 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 **Decided by:** Romi + CTO
 
----
 
 ## 2026-03-20 | Access control — invite-only registration
 
 **Decision:** DataPulse will use invite-only registration. Only whitelisted email addresses can sign up. No open self-registration.
 
-**Why:** The public GitHub repo exposes the codebase but not the infrastructure. Once Module 5 adds a web frontend with Supabase Auth, open registration would let strangers trigger Claude API calls at the owner's expense. Invite-only (whitelist of allowed emails checked at signup) eliminates this risk. Current users: Romi + Petr (added directly via Supabase Auth dashboard).
+**Why:** The public GitHub repo exposes the codebase but not the infrastructure. However, once Module 5 adds a web frontend with Supabase Auth, open registration would let strangers trigger Claude API calls at the owner's expense. Invite-only (whitelist of allowed emails checked at signup) eliminates this risk. Current whitelist: Romi + Petr. Expanding later is a one-row insert.
 
-**Implementation:** `allowed_emails` whitelist checked at login. Registration tab removed from the app entirely.
+**Implementation (Module 5):** Supabase Auth + an `allowed_emails` table or Auth hook that rejects non-whitelisted signups. Exact mechanism TBD when we build Module 5.
 
 **Decided by:** Romi + CTO
 
----
 
 ## 2026-03-20 | RSS feed config — Python dict over database table
 
@@ -166,7 +164,6 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 **Decided by:** Romi decided after cost discussion with CTO
 
----
 
 ## 2026-03-22 | Recommender RLS — INSERT restricted to service role
 
@@ -184,19 +181,21 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 **Why:** These are excluded from the DataPulse tech stack by design (see 2026-03-17 decision). A recommendation to "learn LangChain" contradicts the architectural decisions already logged and would confuse the user. The model has no awareness of project-level constraints unless explicitly told.
 
-**Implementation:** Constraints block in the recommender system prompt listing excluded tools and preferred simpler alternatives.
+**Implementation:** Add a constraints block to the recommender system prompt: "Do not recommend the following tools: LangChain, CrewAI, FastAPI, Airflow. Prefer simpler alternatives that achieve the same outcome."
 
 **Decided by:** CTO observed in Module 3 output, Romi approved
 
----
 
-## 2026-03-22 | Module 4 scope — defer pytest suite and approve/reject CLI
+## 2026-03-22 | Module 4 scope — defer tests and approve/reject CLI
 
-**Decision:** Ship Module 4 without the pytest suite and approve/reject CLI. Both are deferred until the user profile is updated with real, complete data.
+**Decision:** Ship Module 4 without the pytest suite and approve/reject CLI.
+Both are deferred until the user profile is updated with real, complete data.
 
-**Why:** Tests written against sparse profile data lock in incomplete behavior. The approve/reject CLI only matters once recommendations are being acted on regularly. Neither omission blocks the pipeline or the portfolio story.
+**Why:** Tests written against sparse profile data lock in incomplete behavior.
+The approve/reject CLI only matters once recommendations are being acted on
+regularly. Neither omission blocks the pipeline or the portfolio story.
 
-**Deferred to:** After profile data is complete.
+**Deferred to:** Before Module 5 ships.
 
 **Decided by:** Romi
 
@@ -204,9 +203,13 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 ## 2026-03-22 | system-overview.md as living architecture document
 
-**Decision:** `docs/architecture/system-overview.md` is the single source of truth for system architecture. It must be updated whenever a new module ships or a significant architectural change is made.
+**Decision:** `docs/architecture/system-overview.md` is the single source of
+truth for system architecture. It must be updated whenever a new module ships
+or a significant architectural change is made.
 
-**Why:** Recruiters and interviewers read docs, not code. A maintained architecture document with a rendered Mermaid diagram is a stronger portfolio signal than comments scattered across files.
+**Why:** Recruiters and interviewers read docs, not code. A maintained
+architecture document with a rendered Mermaid diagram is a stronger portfolio
+signal than comments scattered across files.
 
 **Decided by:** Romi + CTO
 
@@ -214,9 +217,12 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 ## 2026-03-23 | Learning Lab schema alignment
 
-**Decision:** Use actual migration schema for assessment_results and curriculum_progress instead of prompt spec columns.
+**Decision:** Use actual migration schema for assessment_results and
+curriculum_progress instead of prompt spec columns.
 
-**Why:** assessment_results requires session_id (FK), not topic_id directly. curriculum_progress uses best_score + attempts, not score_percentage. Fallback logic was removed in favor of single correct code path.
+**Why:** assessment_results requires session_id (FK), not topic_id directly.
+curriculum_progress uses best_score + attempts, not score_percentage.
+Fallback logic was removed in favor of single correct code path.
 
 **Decided by:** CTO (schema mismatch caught before runtime)
 
@@ -224,68 +230,10 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 ## 2026-03-23 | topic_skill_mapping seed
 
-**Decision:** Map Topics 1–5 to sql, query_optimization, ctes, window_functions skills only.
+**Decision:** Map Topics 1-5 to sql, query_optimization, ctes,
+window_functions skills only.
 
-**Why:** These are the skills directly practiced in SQL topics. Broader skill inference deferred to Module 3 gap analysis.
-
-**Decided by:** CTO
-
----
-
-## 2026-03-23 | Streamlit frontend over React
-
-**Decision:** Use Streamlit for Module 5 frontend. React deferred indefinitely.
-
-**Why:** Python-only — no JS knowledge required. Free hosting on Streamlit Community Cloud. Cursor generates UI from prompts. For a portfolio capstone, a shipped working product beats a half-built React app. Streamlit's multi-page architecture with native session state sharing is sufficient for the current scope.
-
-**Decided by:** Romi + CTO
-
----
-
-## 2026-03-23 | Multi-page auth — get_authenticated_client() pattern
-
-**Decision:** Every Streamlit page rebuilds the Supabase client from session state tokens via a shared `get_authenticated_client()` helper, called at the top of each page's `main()`.
-
-**Why:** Streamlit re-runs the entire script on every interaction, and navigating between pages in a multi-page app loses the client object from session state. Rebuilding from stored tokens on every page load is the correct pattern — stateless by design, no client object serialization needed.
-
-**Decided by:** CTO
-
----
-
-## 2026-03-23 | Persistent login — streamlit-cookies-controller
-
-**Decision:** Use `streamlit-cookies-controller` to persist the Supabase session token across browser restarts. Added to `pyproject.toml` dependencies.
-
-**Why:** Without cookie persistence, users must log in every time they open the app. Storing the JWT in a browser cookie and restoring it on app load gives standard web app UX. Alternative (localStorage) is not accessible from Streamlit's Python runtime.
-
-**Decided by:** CTO recommended, Romi approved
-
----
-
-## 2026-03-23 | dbt profiles.yml — committed to repo
-
-**Decision:** `dbt/profiles.yml` is force-added to git (overriding `.gitignore`). The GitHub Actions dbt step uses `--profiles-dir .` flag.
-
-**Why:** dbt by default reads profiles from `~/.dbt/profiles.yml` (user home). In GitHub Actions there is no home directory with a pre-seeded profiles file. Committing `profiles.yml` to the repo (with env vars, not hardcoded secrets) is the standard CI/CD pattern. Secrets are injected via GitHub Actions environment variables.
-
-**Decided by:** CTO
-
----
-
-## 2026-03-23 | Supabase connection — session pooler over direct connection
-
-**Decision:** Use session pooler host `aws-1-eu-central-1.pooler.supabase.com:5432` for all dbt and Python connections. Direct connection host (`db.aqdonqswhgabydwycxjo.supabase.co`) is not used.
-
-**Why:** The direct connection host resolves to an IPv6-only address on Romi's network and in GitHub Actions. The session pooler resolves to IPv4 consistently. Port 5432 (not 6543) is used because dbt requires a persistent connection, not transaction-mode pooling.
-
-**Decided by:** CTO diagnosed, Romi confirmed fix
-
----
-
-## 2026-03-27 | mart_trend_summary — normalize trending_score to 0–10
-
-**Decision:** `trending_score` in `mart_trend_summary` is normalized to 0–10 via window function (`raw_trending_score / max(raw_trending_score) over () * 10`). `raw_trending_score` is retained as a separate column for debugging.
-
-**Why:** The raw formula (`signal_count × avg_strength × avg_confidence / 10`) produces unbounded values (observed max: 108). A normalized 0–10 scale is user-readable, consistent with gap scores, and correct for display in reports and the app. Normalization is relative — the top skill always scores 10.
+**Why:** These are the skills directly practiced in SQL topics.
+Broader skill inference deferred to Module 3 gap analysis.
 
 **Decided by:** CTO
