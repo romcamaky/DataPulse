@@ -198,7 +198,6 @@ def render_skill_gap(client: Client, user_id: str) -> None:
             reverse=True,
         )
 
-        st.subheader(category_label_map.get(category_raw, category_raw))
         category_rows_html: list[str] = []
         for skill in category_skills_sorted:
             skill_name = _escape_html(str(skill.get("skill_display_name") or "Unknown skill"))
@@ -206,20 +205,35 @@ def render_skill_gap(client: Client, user_id: str) -> None:
             pct = (level / 5) * 100
             category_rows_html.append(
                 (
-                    '<div style="display:flex; align-items:center; margin-bottom:8px;">'
-                    '<div style="width:200px; font-size:13px; color:#374151; white-space:nowrap; '
-                    f'overflow:hidden; text-overflow:ellipsis;">{skill_name}</div>'
-                    '<div style="flex:1; background:#E5E7EB; border-radius:4px; height:10px; '
-                    'margin:0 16px;">'
-                    f'<div style="width:{pct}%; background:#6366F1; border-radius:4px; '
-                    'height:10px;"></div>'
-                    "</div>"
-                    '<div style="width:36px; font-size:12px; color:#6B7280; '
-                    f'text-align:right;">{level}/5</div>'
-                    "</div>"
+                    f"""<div style="display:flex; align-items:center; margin-bottom:10px; 
+            padding:8px 12px; background:#FFFFFF; border:1px solid #E2E8F0;
+            border-radius:8px;">
+  <div style="width:180px; font-size:13px; font-weight:500; color:#1E293B;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+              flex-shrink:0;">{skill_name}</div>
+  <div style="flex:1; background:#E2E8F0; border-radius:4px; height:8px;
+              margin:0 16px;">
+    <div style="width:{pct}%; background:#14B8A6; border-radius:4px;
+                height:8px; transition:width 0.3s ease;"></div>
+  </div>
+  <div style="width:32px; font-size:12px; color:#64748B;
+              text-align:right; flex-shrink:0;">{level}/5</div>
+</div>"""
                 )
             )
-        st.markdown("".join(category_rows_html), unsafe_allow_html=True)
+
+        all_skill_rows_html = "".join(category_rows_html)
+        html_block = (
+            '<div style="background:#F0FDFA; border-radius:12px; padding:12px 16px;'
+            "            margin-bottom:16px;">"
+            f"{all_skill_rows_html}"
+            "</div>"
+        )
+
+        col, _ = st.columns([1, 1])
+        with col:
+            st.subheader(category_label_map.get(category_raw, category_raw))
+            st.markdown(html_block, unsafe_allow_html=True)
 
     # Keep the existing "Top Skill Gaps" table below the charts.
     try:
@@ -255,19 +269,21 @@ def render_skill_gap(client: Client, user_id: str) -> None:
             columns=["Rank", "Skill", "Your level", "Market demand", "Gap score (0-10)"]
         )
 
-    st.markdown("### Top Skill Gaps")
-    st.dataframe(
-        gap_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Rank": st.column_config.NumberColumn("Rank", width="small"),
-            "Skill": st.column_config.TextColumn("Skill", width="large"),
-            "Your level": st.column_config.NumberColumn("Your level", width="medium"),
-            "Market demand": st.column_config.NumberColumn("Market demand", width="medium"),
-            "Gap score (0-10)": st.column_config.NumberColumn("Gap score (0-10)", width="medium"),
-        },
-    )
+    col, _ = st.columns([2, 1])
+    with col:
+        st.markdown("### Top Skill Gaps")
+        st.dataframe(
+            gap_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Rank": st.column_config.NumberColumn("Rank", width="small"),
+                "Skill": st.column_config.TextColumn("Skill", width="large"),
+                "Your level": st.column_config.NumberColumn("Your level", width="medium"),
+                "Market demand": st.column_config.NumberColumn("Market demand", width="medium"),
+                "Gap score (0-10)": st.column_config.NumberColumn("Gap score (0-10)", width="medium"),
+            },
+        )
 
 
 def render_recommendations(client: Client, user_id: str) -> None:
