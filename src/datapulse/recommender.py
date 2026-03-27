@@ -28,7 +28,7 @@ _CLAUDE_MODEL: Final[str] = "claude-sonnet-4-20250514"
 _MAX_TOKENS: Final[int] = 4096
 _RETRY_BACKOFF_SEC: Final[float] = 5.0
 
-_GAP_LIMIT: Final[int] = 15
+_GAP_LIMIT: Final[int] = 25
 _TREND_LIMIT: Final[int] = 10
 
 _ALLOWED_RESOURCE_TYPES: Final[frozenset[str]] = frozenset(
