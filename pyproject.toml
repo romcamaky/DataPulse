@@ -10,7 +10,7 @@ dependencies = [
     "anthropic",
     "streamlit>=1.45.0",
     "plotly>=6.0.0",
-    "streamlit-cookies-controller>=0.3.0",
+    "streamlit-cookies-controller>=0.0.4",
     "requests>=2.31.0",
 ]
 
