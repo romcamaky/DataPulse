@@ -64,6 +64,27 @@ Supabase (PostgreSQL + Auth + RLS) · dbt Core · Python · Claude API · GitHub
 
 ---
 
+## Screenshots
+
+### Recommendations
+![Recommendations](docs/screenshots/Recommendations.png)
+
+### Learning Lab — Question
+![Learning Lab Question](docs/screenshots/Learning%20Lab%20Question.png)
+
+### Learning Lab — Correct feedback
+![Learning Lab Correct](docs/screenshots/Learning%20Lab%20Correct.png)
+
+### Learning Lab — Wrong feedback
+![Learning Lab Wrong](docs/screenshots/Learning%20Lab%20Wrong.png)
+![Learning Lab Wrong 2](docs/screenshots/Learning%20Lab%20Wrong2.png)
+![Learning Lab Wrong 3](docs/screenshots/Learning%20Lab%20Wrong3.png)
+
+### Biweekly report
+![Biweekly report](docs/screenshots/Biweekly%20report.png)
+
+---
+
 ## Architecture principles
 
 - **Multi-user from day 1** — every table has `user_id`, every query is RLS-scoped, auth is Supabase Auth
