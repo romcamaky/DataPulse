@@ -9,6 +9,9 @@ import streamlit as st
 from supabase import Client
 
 from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.ui.styles import inject_global_styles
+
+inject_global_styles()
 
 RecommendationStatus = Literal["pending", "approved", "rejected", "completed"]
 PriorityTier = Literal["critical", "important", "nice_to_have"]

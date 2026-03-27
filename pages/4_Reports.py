@@ -8,6 +8,9 @@ from pathlib import Path
 import streamlit as st
 
 from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.ui.styles import inject_global_styles
+
+inject_global_styles()
 
 
 def render_reports_list() -> None:

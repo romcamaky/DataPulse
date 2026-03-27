@@ -12,6 +12,9 @@ import streamlit as st
 from supabase import Client
 
 from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.ui.styles import inject_global_styles
+
+inject_global_styles()
 
 def _get_user_id_or_stop() -> str:
     """Resolve the current user's UUID from session state."""
@@ -177,7 +180,7 @@ def render_skill_gap(client: Client, user_id: str) -> None:
         y="skill",
         orientation="h",
         color="level",
-        color_continuous_scale=["#60A5FA", "#6366F1"],
+        color_continuous_scale=["#F0FDFA", "#14B8A6", "#0D9488"],
     )
     figure.update_layout(showlegend=False, margin=dict(l=0, r=0, t=10, b=0))
     figure.update_xaxes(dtick=1)

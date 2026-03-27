@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover
     CookieController = None  # type: ignore[assignment]
 
 from datapulse.config import get_supabase_anon_key, get_supabase_url
+from datapulse.ui.styles import inject_global_styles
 
 # Page config must be the first Streamlit command.
 st.set_page_config(
@@ -26,6 +27,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+inject_global_styles()
 
 COOKIE_CONTROLLER = None
 

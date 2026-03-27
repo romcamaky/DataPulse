@@ -15,6 +15,9 @@ from uuid import uuid4
 
 from datapulse.config import get_anthropic_key
 from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.ui.styles import inject_global_styles
+
+inject_global_styles()
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 CLAUDE_SYSTEM_PROMPT = (
