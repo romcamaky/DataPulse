@@ -58,25 +58,36 @@ aggregated as (
     round(
       count(*)::numeric * avg(f.strength)::numeric * avg(f.confidence)::numeric / 10.0,
       2
-    ) as trending_score
+    ) as raw_trending_score
   from filtered as f
   group by f.skill_display_name, f.skill_category, f.has_canonical_skill
+),
+
+normalized as (
+  select
+    *,
+    round(
+      raw_trending_score / nullif(max(raw_trending_score) over (), 0) * 10,
+      2
+    ) as trending_score
+  from aggregated
 )
 
 select
-  a.skill_display_name,
-  a.skill_category,
-  a.has_canonical_skill,
-  a.signal_count,
-  a.avg_strength,
+  n.skill_display_name,
+  n.skill_category,
+  n.has_canonical_skill,
+  n.signal_count,
+  n.avg_strength,
   d.dominant_signal_type,
-  a.regions,
-  a.trending_score
-from aggregated as a
+  n.regions,
+  n.raw_trending_score,
+  n.trending_score
+from normalized as n
 join dominant as d
-  on a.skill_display_name = d.skill_display_name
-  and a.skill_category = d.skill_category
-  and a.has_canonical_skill = d.has_canonical_skill
-where a.signal_count >= 2
-order by a.trending_score desc
+  on n.skill_display_name = d.skill_display_name
+  and n.skill_category = d.skill_category
+  and n.has_canonical_skill = d.has_canonical_skill
+where n.signal_count >= 2
+order by n.trending_score desc
 limit 30
