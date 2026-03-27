@@ -14,11 +14,12 @@ def inject_global_styles() -> None:
     html_block = """
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
         <style>
-        /* Base typography: keep body text consistent across all pages. */
-        html, body, [class*="css"], .stApp, .stMarkdown, .stText, p, div, span,
-        label, input, textarea, button {
+        /* Base typography: keep text consistent without overriding widget layout internals. */
+        html, body, .stApp {
             font-family: "DM Sans", sans-serif !important;
             color: #1E293B;
+        }
+        .stApp p, .stApp li, .stApp label, .stApp [data-testid="stMarkdownContainer"] {
             font-size: 16px;
             line-height: 1.6;
         }
@@ -62,6 +63,12 @@ def inject_global_styles() -> None:
         .stButton > button:hover {
             background-color: #0D9488 !important;
             color: #FFFFFF !important;
+        }
+
+        /* Keep expander headers readable when global font rules are active. */
+        [data-testid="stExpander"] summary,
+        [data-testid="stExpander"] button {
+            line-height: normal !important;
         }
 
         /* Alert boxes: align success/info/warning with DataPulse palette. */
