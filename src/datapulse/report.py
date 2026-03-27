@@ -1,5 +1,5 @@
 """
-DataPulse weekly career intelligence report: Supabase marts + profile → markdown file.
+DataPulse biweekly career intelligence report: Supabase marts + profile → markdown file.
 
 Writes ``docs/reports/YYYY-MM-DD.md`` (UTC date) or prints to stdout when ``--dry-run``.
 """
@@ -320,7 +320,7 @@ def render_markdown_report(
     narrative = profile.get("career_narrative") or ""
 
     lines: list[str] = [
-        "# DataPulse — Weekly Career Intelligence Report",
+        "# DataPulse — Biweekly Career Intelligence Report",
         "",
         f"Generated: {report_date_utc}",
         f"User: {display_name} | {role_title} | {country}",
@@ -565,7 +565,7 @@ def run_report(*, user_id: str | None, dry_run: bool) -> str:
 def main() -> None:
     """CLI: ``python -m datapulse.report`` with optional ``--user-id`` and ``--dry-run``."""
     parser = argparse.ArgumentParser(
-        description="Generate weekly career intelligence markdown report (Supabase → docs/reports).",
+        description="Generate biweekly career intelligence markdown report (Supabase → docs/reports).",
     )
     parser.add_argument(
         "--user-id",
