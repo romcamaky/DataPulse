@@ -15,6 +15,7 @@ from uuid import uuid4
 
 from datapulse.config import get_anthropic_key
 from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.study_docs import generate_study_doc_after_session
 from datapulse.ui.styles import inject_global_styles
 
 inject_global_styles()
@@ -63,6 +64,8 @@ def _reset_practice_state() -> None:
     st.session_state["lab_show_answer"] = False
     st.session_state["lab_user_answer"] = ""
     st.session_state["lab_feedback"] = None
+    st.session_state["lab_practice_doc_session_id"] = None
+    st.session_state["lab_practice_doc_batch_count"] = 0
 
 
 def _reset_assess_state() -> None:
@@ -74,6 +77,7 @@ def _reset_assess_state() -> None:
     st.session_state["assess_complete"] = False
     st.session_state["assess_current_answer"] = ""
     st.session_state["assess_progress_saved"] = False
+    st.session_state["assess_study_session_id"] = None
 
 
 def render_topic_selector(client: Client) -> tuple[str | None, str | None]:
@@ -117,6 +121,7 @@ def render_topic_selector(client: Client) -> tuple[str | None, str | None]:
     )
     selected_topic = topic_map[selected_label]
     topic_id = str(selected_topic["id"])
+    st.session_state["lab_topic_title"] = str(selected_topic.get("title") or "Unknown Topic")
 
     # Detect topic changes and reset mode-specific state.
     if st.session_state.get("lab_topic_id") != topic_id:
@@ -465,22 +470,30 @@ def save_assessment_result(
     user_answer: str,
     feedback: str,
     is_correct: bool,
-) -> None:
-    """Persist one assessed answer row using the actual schema (session_id)."""
-    # Create one study_session row first, then attach the assessment_results row to it.
-    # Per the requested flow, we mark this session as "practice".
-    session_id = str(uuid4())
-    started_at_iso = datetime.now(timezone.utc).isoformat()
+    *,
+    study_session_id: str | None = None,
+    session_mode: str = "practice",
+) -> str:
+    """Persist one assessed answer row using the actual schema (session_id).
 
-    client.table("study_sessions").insert(
-        {
-            "id": session_id,
-            "user_id": user_id,
-            "topic_id": topic_id,
-            "mode": "practice",
-            "started_at": started_at_iso,
-        }
-    ).execute()
+    If ``study_session_id`` is set, reuse that row; otherwise create a new ``study_sessions`` row.
+    Returns the ``session_id`` used for the inserted ``assessment_results`` row.
+    """
+    if study_session_id is None:
+        session_id = str(uuid4())
+        started_at_iso = datetime.now(timezone.utc).isoformat()
+
+        client.table("study_sessions").insert(
+            {
+                "id": session_id,
+                "user_id": user_id,
+                "topic_id": topic_id,
+                "mode": session_mode,
+                "started_at": started_at_iso,
+            }
+        ).execute()
+    else:
+        session_id = study_session_id
 
     client.table("assessment_results").insert(
         {
@@ -493,6 +506,7 @@ def save_assessment_result(
             "feedback": feedback,
         }
     ).execute()
+    return session_id
 
 
 def _upsert_curriculum_progress(
@@ -733,7 +747,8 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
                     )
                     st.session_state["lab_feedback"] = feedback
 
-                    save_assessment_result(
+                    practice_batch_sid = st.session_state.get("lab_practice_doc_session_id")
+                    used_sid = save_assessment_result(
                         client=client,
                         user_id=user_id,
                         topic_id=topic_id,
@@ -741,7 +756,24 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
                         user_answer=user_answer,
                         feedback=feedback,
                         is_correct=is_correct,
+                        study_session_id=practice_batch_sid,
+                        session_mode="practice",
                     )
+                    if practice_batch_sid is None:
+                        st.session_state["lab_practice_doc_session_id"] = used_sid
+                    st.session_state["lab_practice_doc_batch_count"] = int(
+                        st.session_state.get("lab_practice_doc_batch_count") or 0
+                    ) + 1
+                    if st.session_state["lab_practice_doc_batch_count"] >= 3:
+                        generate_study_doc_after_session(
+                            client=client,
+                            user_id=user_id,
+                            topic_id=topic_id,
+                            topic_title=st.session_state.get("lab_topic_title", "Unknown Topic"),
+                            session_id=used_sid,
+                        )
+                        st.session_state["lab_practice_doc_session_id"] = None
+                        st.session_state["lab_practice_doc_batch_count"] = 0
                 except Exception as e:  # noqa: BLE001
                     st.error(f"Could not get Claude feedback: {e}")
 
@@ -785,6 +817,18 @@ def render_assess_mode(client: Client, user_id: str, topic_id: str) -> None:
         st.session_state["assess_complete"] = False
         st.session_state["assess_current_answer"] = ""
         st.session_state["assess_progress_saved"] = False
+        assess_sid = str(uuid4())
+        started_at_iso = datetime.now(timezone.utc).isoformat()
+        client.table("study_sessions").insert(
+            {
+                "id": assess_sid,
+                "user_id": user_id,
+                "topic_id": topic_id,
+                "mode": "assess",
+                "started_at": started_at_iso,
+            }
+        ).execute()
+        st.session_state["assess_study_session_id"] = assess_sid
 
     if st.session_state.get("assess_complete"):
         results = list(st.session_state.get("assess_results") or [])
@@ -817,6 +861,17 @@ def render_assess_mode(client: Client, user_id: str, topic_id: str) -> None:
                 topic_id=topic_id,
                 best_score=correct_count,
             )
+
+            # Generate or update study documentation for this topic based on session results
+            assess_session_id = st.session_state.get("assess_study_session_id")
+            if assess_session_id:
+                generate_study_doc_after_session(
+                    client=client,
+                    user_id=user_id,
+                    topic_id=topic_id,
+                    topic_title=st.session_state.get("lab_topic_title", "Unknown Topic"),
+                    session_id=assess_session_id,
+                )
 
             # Sync mapped user skill levels after curriculum progress is stored.
             sync_skills_after_assessment(
@@ -892,6 +947,8 @@ def render_assess_mode(client: Client, user_id: str, topic_id: str) -> None:
             user_answer=normalized_answer,
             feedback=feedback,
             is_correct=is_correct,
+            study_session_id=st.session_state.get("assess_study_session_id"),
+            session_mode="assess",
         )
 
         # Store in session for final report rendering.
