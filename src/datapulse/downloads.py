@@ -112,11 +112,22 @@ def _md_to_pdf_bytes(title: str, markdown_content: str) -> bytes:
         """Replace characters outside latin-1 range with '?' to prevent encoding errors."""
         return text.encode("latin-1", errors="replace").decode("latin-1")
 
+    def _break_long_words(text: str, max_len: int = 80) -> str:
+        """Break words longer than max_len to prevent FPDF horizontal overflow."""
+        return re.sub(
+            r"(\S{" + str(max_len) + r",})",
+            lambda m: "\n".join(
+                [m.group(0)[i : i + max_len] for i in range(0, len(m.group(0)), max_len)]
+            ),
+            text,
+        )
+
     pdf = FPDF()
     pdf.add_page()
 
-    # Title — sanitized
+    # Title — sanitized; reset X so multi_cell(0, ...) has full line width
     pdf.set_font("Helvetica", style="B", size=16)
+    pdf.set_x(pdf.l_margin)
     pdf.multi_cell(0, 10, _safe(title))
     pdf.ln(4)
 
@@ -128,8 +139,15 @@ def _md_to_pdf_bytes(title: str, markdown_content: str) -> bytes:
         clean = re.sub(r"`([^`]+)`", r"\1", clean)
         if clean.strip() in ("---", "***", "___"):
             pdf.ln(3)
+            pdf.set_x(pdf.l_margin)
             continue
-        pdf.multi_cell(0, 7, _safe(clean))
+        clean = _break_long_words(clean)
+        for subline in clean.splitlines():
+            if pdf.w - pdf.x - pdf.r_margin < pdf.font_size:
+                pdf.ln()
+                pdf.set_x(pdf.l_margin)
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(0, 7, _safe(subline))
 
     return bytes(pdf.output())
 
