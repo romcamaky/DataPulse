@@ -26,7 +26,6 @@ def _fetch_all_topics(client: Client) -> list[dict]:
 
 
 def _fetch_theory(client: Client, topic_id: str) -> str | None:
-    """Fetch pre-seeded theory content for a topic."""
     result = (
         client.table("theory_content")
         .select("content")
@@ -34,11 +33,12 @@ def _fetch_theory(client: Client, topic_id: str) -> str | None:
         .maybe_single()
         .execute()
     )
-    return result.data["content"] if result.data else None
+    if result.data and isinstance(result.data, dict):
+        return result.data.get("content")
+    return None
 
 
 def _fetch_study_doc(client: Client, user_id: str, topic_id: str) -> str | None:
-    """Fetch user's study documentation for a topic."""
     result = (
         client.table("study_documentation")
         .select("content")
@@ -47,7 +47,9 @@ def _fetch_study_doc(client: Client, user_id: str, topic_id: str) -> str | None:
         .maybe_single()
         .execute()
     )
-    return result.data["content"] if result.data else None
+    if result.data and isinstance(result.data, dict):
+        return result.data.get("content")
+    return None
 
 
 def build_theory_md(topic_title: str, content: str) -> str:
