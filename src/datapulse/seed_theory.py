@@ -18,7 +18,7 @@ load_dotenv()  # Must run before os.environ reads below
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]  # service role bypasses RLS for seeding
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ["SUPABASE_KEY"]
 
 
 def _build_theory_prompt(topic_title: str, topic_description: str, category: str) -> str:
