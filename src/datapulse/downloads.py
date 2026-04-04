@@ -105,35 +105,31 @@ def build_combined_md(
 def _md_to_pdf_bytes(title: str, markdown_content: str) -> bytes:
     """
     Convert markdown content to PDF bytes using fpdf2.
-    Strips markdown formatting — renders as clean plain text.
-    fpdf2 is pure Python and works on Streamlit Cloud without system deps.
+    Strips markdown formatting and sanitizes to latin-1 to avoid encoding errors.
+    fpdf2 Helvetica font only supports latin-1 character range.
     """
+    def _safe(text: str) -> str:
+        """Replace characters outside latin-1 range with '?' to prevent encoding errors."""
+        return text.encode("latin-1", errors="replace").decode("latin-1")
+
     pdf = FPDF()
     pdf.add_page()
 
-    # Title
+    # Title — sanitized
     pdf.set_font("Helvetica", style="B", size=16)
-    pdf.multi_cell(0, 10, title)
+    pdf.multi_cell(0, 10, _safe(title))
     pdf.ln(4)
 
-    # Body — strip markdown symbols, render line by line
+    # Body — strip markdown symbols, sanitize, render line by line
     pdf.set_font("Helvetica", size=11)
     for line in markdown_content.splitlines():
-        # Strip markdown heading markers
         clean = re.sub(r"^#{1,6}\s*", "", line)
-        # Strip bold/italic markers
         clean = re.sub(r"\*{1,3}(.*?)\*{1,3}", r"\1", clean)
-        # Strip inline code
         clean = re.sub(r"`([^`]+)`", r"\1", clean)
-        # Skip horizontal rules
         if clean.strip() in ("---", "***", "___"):
             pdf.ln(3)
             continue
-        try:
-            pdf.multi_cell(0, 7, clean)
-        except Exception:
-            # Skip lines with characters fpdf2 cannot encode
-            pass
+        pdf.multi_cell(0, 7, _safe(clean))
 
     return bytes(pdf.output())
 
