@@ -26,29 +26,31 @@ def _fetch_all_topics(client: Client) -> list[dict]:
 
 
 def _fetch_theory(client: Client, topic_id: str) -> str | None:
+    """Fetch pre-seeded theory content for a topic."""
     result = (
         client.table("theory_content")
         .select("content")
         .eq("topic_id", topic_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if result.data and isinstance(result.data, dict):
-        return result.data.get("content")
+    if result.data:
+        return result.data[0]["content"]
     return None
 
 
 def _fetch_study_doc(client: Client, user_id: str, topic_id: str) -> str | None:
+    """Fetch user's study documentation for a topic."""
     result = (
         client.table("study_documentation")
         .select("content")
         .eq("user_id", user_id)
         .eq("topic_id", topic_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if result.data and isinstance(result.data, dict):
-        return result.data.get("content")
+    if result.data:
+        return result.data[0]["content"]
     return None
 
 
