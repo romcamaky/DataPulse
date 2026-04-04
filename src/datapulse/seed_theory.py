@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import anthropic
 from supabase import create_client
 
-load_dotenv()  # Must run before os.environ reads below
+load_dotenv(override=True)  # Must run before os.environ reads below
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 SUPABASE_URL = os.environ["SUPABASE_URL"]
