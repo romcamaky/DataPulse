@@ -9,6 +9,8 @@ Skips topics that already have theory content (idempotent).
 import os
 import time
 from datetime import datetime, timezone
+
+from dotenv import load_dotenv
 import anthropic
 from supabase import create_client
 
@@ -55,6 +57,7 @@ def generate_theory_for_all_topics() -> None:
     Main function: fetches all curriculum topics, generates theory for each,
     saves to theory_content table. Skips topics already covered.
     """
+    load_dotenv()  # Load .env file so SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY are available
     # Use service role client for seeding (bypasses RLS)
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
