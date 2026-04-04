@@ -7,6 +7,7 @@ dependencies = [
     "python-dotenv",
     "supabase",
     "feedparser",
+    "fpdf2",
     "anthropic",
     "streamlit>=1.45.0",
     "plotly>=6.0.0",
