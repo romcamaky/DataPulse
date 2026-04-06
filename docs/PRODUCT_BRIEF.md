@@ -4,7 +4,7 @@
 
 DataPulse is a personal AI career intelligence platform for data analysts and engineers. It builds a complete profile of the user's skills, then continuously monitors the global data/AI ecosystem, compares market demand against the user's profile, identifies skill gaps, and generates personalized learning recommendations — all automatically.
 
-The user's only weekly interaction: read a report, approve or reject suggested changes to their learning plan. Everything else runs on its own.
+The user's main recurring interaction: every two weeks, read a report and approve or reject suggested changes to their learning plan. Everything else runs on its own.
 
 This is also a public portfolio project. Every component demonstrates real data engineering, analytics engineering, and AI integration skills. The code lives on GitHub, the architecture is documented, and the author can walk through every decision in an interview.
 
@@ -15,17 +15,17 @@ This is also a public portfolio project. Every component demonstrates real data 
 ```
 ┌─────────────────────────────────────┐
 │         PRESENTATION LAYER          │
-│  Web app (Lovable → Streamlit/React)│
-│  Weekly reports (markdown → GitHub) │
+│  Streamlit multi-page app           │
+│  Biweekly reports (markdown → GitHub)│
 │  DataPulse CLI tool                 │
 └──────────────────┬──────────────────┘
                    │
 ┌──────────────────┴──────────────────┐
 │        INTELLIGENCE LAYER           │
-│  Claude API:                        │
-│  - Skill extraction from CV/input   │
-│  - Trend analysis from articles     │
-│  - Gap detection & recommendations  │
+│  Claude Haiku: extraction, grading  │
+│  Claude Sonnet: recommendations,   │
+│    study docs, theory               │
+│  (CV/skill input, articles, gaps)   │
 └──────────────────┬──────────────────┘
                    │
 ┌──────────────────┴──────────────────┐
@@ -56,10 +56,9 @@ This is also a public portfolio project. Every component demonstrates real data 
 | Database & Auth | Supabase (PostgreSQL + Auth + RLS) | Already running, free tier, multi-user ready |
 | Transformations | dbt Core + postgres adapter | 3-layer modeling, testable, portfolio-grade |
 | Backend/Pipeline | Python | Ingestion scripts, Claude API calls, CLI tool |
-| Intelligence | Claude API (Anthropic) | Content analysis, skill extraction, recommendations |
-| Automation | GitHub Actions | Weekly cron, CI/CD, zero infrastructure cost |
-| Frontend (now) | Lovable | Fast iteration, already deployed |
-| Frontend (later) | Streamlit or React via Cursor | Capstone module |
+| Intelligence | Claude API (Anthropic) | **Haiku** for high-volume extraction and answer grading; **Sonnet** for recommendations, study documentation, and theory — cost-conscious split |
+| Automation | GitHub Actions | Biweekly cron (Sunday 06:00 UTC), CI/CD, zero infrastructure cost |
+| Frontend | Streamlit | Python-only, free Community Cloud hosting, multi-page with native auth |
 | Dev tool | Cursor AI | Primary code generation tool |
 | Version control | GitHub | Public repo — this is a portfolio project |
 
@@ -67,59 +66,56 @@ This is also a public portfolio project. Every component demonstrates real data 
 
 ---
 
-## 5 Modules — Build Order
+## Modules
 
-### Module 1: Profile Engine (Month 1–2, ~20h)
+### Module 1: Profile Engine
 
 Structured onboarding — questionnaire + CV upload. Claude API extracts structured skill data. Stores in Supabase (user_profiles, user_skills, work_experience). Each skill has level, confidence, evidence_type, visibility. Supports confidential work projects.
 
-Curriculum alignment: Python fundamentals (Topics 9–10).
+### Module 2: Market Intelligence Agent
 
-### Module 2: Market Intelligence Agent (Month 3–4, ~20h)
+Python script fetches 31 curated RSS feeds across seven categories. Claude Haiku batch-analyzes articles → extracts technologies, trends, skill demands → stores in market_signals. Runs automatically on a biweekly schedule via GitHub Actions cron (Sunday 06:00 UTC).
 
-Python script fetches 15–20 curated RSS feeds weekly. Claude API batch-analyzes articles → extracts technologies, trends, skill demands → stores in market_signals. Runs automatically every Sunday via GitHub Actions cron.
+### Module 3: Skill Gap Analyzer + Reports
 
-Curriculum alignment: APIs + databases (Topics 11–12).
+dbt models join market_signals with user_skills to produce a skill gap mart. Python aggregates trends. Claude Sonnet generates personalized recommendations. Markdown report auto-commits to GitHub.
 
-### Module 3: Skill Gap Analyzer + Reports (Month 5–6, ~20h)
+### Module 4: Learning Path Updater
 
-dbt models join market_signals with user_skills to produce a skill gap mart. Python + Pandas aggregates trends. Claude API generates personalized recommendations. Markdown report auto-commits to GitHub. User gets notified.
+Approved recommendations update curriculum priorities. Architecture documentation and automated report flow; deeper test automation where it adds value.
 
-Curriculum alignment: Pandas (Topic 13) + dbt in depth (Topics 15–17).
+### Module 5: Multi-User App — Capstone
 
-### Module 4: Learning Path Updater + Testing (Month 7–8, ~15h)
+Supabase Auth, RLS policies, Streamlit multi-page frontend with onboarding flow, dashboard, recommendations, and biweekly reports. Learning Lab for practice and assessment with AI grading; Learn Mode for theory content and Q&A; study documentation generated from sessions; Downloads page for Markdown and PDF exports; invite-only access for cost control.
 
-Approved recommendations auto-update curriculum priorities. Full pytest suite for entire pipeline. Monitoring, freshness checks, architecture documentation.
+### Post-launch features
 
-Curriculum alignment: Testing (Topic 14) + DE concepts (Topics 18–20).
-
-### Module 5: Multi-User App — Capstone (Month 9–12, ~40h)
-
-Supabase Auth, RLS policies, web frontend with onboarding flow, dashboard, reports. Any user can register and get personalized career intelligence.
-
-Curriculum alignment: Integration of everything.
+- **Study Documentation** — auto-generated personalized notes after Learning Lab sessions, merged over time per topic.
+- **Learn Mode** — pre-seeded theory content per topic plus Claude Q&A that feeds study notes.
+- **Downloads page** — per-topic and combined study guides as Markdown and PDF.
+- **Curriculum expansion** — 28 topics (20 data engineering + 4 AI literacy + 4 business analysis).
+- **Skills taxonomy** — six categories for finer gap analysis (`language`, `framework`, `platform_tool`, `engineering`, `ai_ml`, `soft_skill`).
+- **Practice mode** — study documentation generation batched every third answered question to balance cost and usefulness.
 
 ---
 
-## Weekly Automated Cycle
+## Biweekly Automated Cycle
 
-Every Sunday at 6:00 UTC, zero human input:
+Every two weeks, on Sunday at 06:00 UTC, zero human input:
 
-1. RSS Collector → fetch feeds → store raw in Supabase
-2. Claude API → analyze articles → extract signals
+1. RSS Collector → fetch feeds → store raw in Supabase (`feed_items`)
+2. Claude Haiku → analyze articles → extract signals → `market_signals`
 3. dbt build → staging → intermediate → skill gap marts
-4. Claude API → gap data → personalized recommendations
+4. Claude Sonnet → gap data → personalized recommendations
 5. Report Generator → markdown → auto-commit to GitHub
-6. Notification → email/Slack: "Your report is ready"
-7. Learning Path Update → pending_recommendations for approval
+6. Recommendations surface in the app → user approves or rejects
 
-User's weekly effort: ~5 minutes.
+Your effort: read the report, approve or reject suggestions.
 
 ---
 
 ## Constraints
 
-- **Time:** ~3–4 hours/week for building
 - **Budget:** Supabase free tier, Claude API pay-per-use
 - **Public repo:** Code quality, documentation, commit history matter
 - **Multi-user from day 1:** Every table has user_id, every query is RLS-scoped
@@ -130,11 +126,11 @@ User's weekly effort: ~5 minutes.
 
 ## Existing Infrastructure
 
-- Supabase instance: 8 tables, RLS enabled, Frankfurt region
-- dbt project: 7 models (6 staging + 1 intermediate), 32 tests passing
-- GitHub Actions CI: runs dbt build + test on every PR
-- GitHub repo: github.com/romcamaky/AI-Native-Data-Engineer-Journey
-- Portfolio site: ai-native-data-engineer-journey.lovable.app
+- Supabase instance: 19 tables, RLS on all, Frankfurt region
+- dbt project: 11 models (6 staging + 3 intermediate + 2 marts), 42+ tests
+- GitHub Actions: biweekly market intelligence pipeline; dbt build + test on PRs as configured
+- Streamlit Community Cloud: live app deployment
+- GitHub repo: [github.com/romcamaky/DataPulse](https://github.com/romcamaky/DataPulse)
 
 ---
 
@@ -146,3 +142,4 @@ User's weekly effort: ~5 minutes.
 | Analytics Engineer | dbt modeling over real data, testing, documentation |
 | AI / Data Designer | Claude API in pipeline, prompt engineering in code, system design |
 | Data Analyst + AI | Skill gap analysis, trend detection, automated reporting |
+| AI Solutions Analyst | Two-tier Claude strategy (Haiku vs Sonnet), prompt engineering, AI-augmented product delivery, cost-conscious AI design |
