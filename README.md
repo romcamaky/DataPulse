@@ -1,111 +1,111 @@
 # DataPulse
 
-Personal AI career intelligence platform for data analysts and engineers.
+Personal AI career intelligence platform that automatically monitors the data/AI job market, identifies skill gaps, and generates personalized learning recommendations.
 
-DataPulse profiles your skills, monitors the global data/AI ecosystem, compares market demand against your profile, identifies skill gaps, and generates personalized learning recommendations — fully automated, every two weeks.
+## What it does
 
-🚀 **Live app:** [datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app](https://datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app)
+DataPulse ingests **31 RSS feeds** across the data and AI ecosystem, uses the **Claude API** to extract structured market signals, and runs **dbt** transformations so demand can be compared against your profile. A **skill gap analysis** engine scores where you are strong or thin relative to the market, then **Claude Sonnet** turns that into **personalized recommendations** and supporting material. The **Learning Lab** is built into the same **Streamlit** app so practice and assessment stay next to your roadmap. A **biweekly automated pipeline** keeps everything current with no manual ETL. Your effort: read the report, approve or reject suggestions.
 
-> Built with production-grade architecture — Supabase Auth, Row Level Security on every table, user-scoped queries throughout. Additional users can be added to the database. Not public due to API costs, but the infrastructure supports it.
+## Live demo & repository
 
----
+- **Live app:** [datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app](https://datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app)
+- **Repository:** [github.com/romcamaky/DataPulse](https://github.com/romcamaky/DataPulse)
 
-## Status
-
-🟢 **All 5 modules shipped.** Fully automated biweekly pipeline running in production.
-
-See [STATUS.md](docs/STATUS.md) for current state.
-
----
-
-## How it works
+## Architecture
 
 ```
-Every other Sunday (UTC), automatically:
-
-RSS feeds (31 sources) → Claude Haiku signal extraction → dbt models (11 models, 30+ tests)
-→ skill gap analysis (normalized 0–10) → Claude Sonnet recommendations → markdown report
-
-Your effort: read the report, approve or reject suggestions. ~5 minutes per cycle.
+┌─────────────────────────────────────┐
+│         PRESENTATION LAYER          │
+│  Streamlit multi-page app           │
+│  Biweekly reports (markdown)        │
+└──────────────────┬──────────────────┘
+                   │
+┌──────────────────┴──────────────────┐
+│        INTELLIGENCE LAYER           │
+│  Claude Haiku: signal extraction    │
+│  Claude Sonnet: recommendations,    │
+│    study docs, theory, grading      │
+└──────────────────┬──────────────────┘
+                   │
+┌──────────────────┴──────────────────┐
+│        TRANSFORMATION LAYER         │
+│  dbt Core: staging → intermediate   │
+│    → marts (11 models, 42+ tests)   │
+└──────────────────┬──────────────────┘
+                   │
+┌──────────────────┴──────────────────┐
+│           DATA LAYER                │
+│  Supabase: 19 tables, RLS,         │
+│  Auth, PostgreSQL                   │
+└─────────────────────────────────────┘
 ```
 
----
+## Tech stack
+
+| Layer | Tool | Why |
+|--------|------|-----|
+| Data | **Supabase** | PostgreSQL with Auth, Row Level Security on every table, and a single place for app and pipeline state. |
+| Transformation | **dbt Core** | Staging → intermediate → marts with tests and documentation as first-class artifacts. |
+| Application | **Python** | Scripts, Streamlit UI, and API clients without an extra web framework. |
+| Intelligence (batch) | **Claude Haiku** | Cost-efficient extraction of signals from large article batches. |
+| Intelligence (quality) | **Claude Sonnet** | Rich recommendations, study content, theory, and answer grading where nuance matters. |
+| Automation | **GitHub Actions** | Scheduled pipeline with secrets, concurrency, and repo write access for reports. |
+| UI | **Streamlit** | Fast multi-page app with auth integration and a focused UX for a solo portfolio product. |
+| **Explicitly NOT used** | LangChain, CrewAI, FastAPI, Airflow | Avoided to limit moving parts: scripts, Actions, and dbt stay transparent and easy to ship without agent frameworks or extra services. |
+
+## Modules
+
+| # | Module | Description |
+|---|--------|-------------|
+| 1 | Profile Engine | ✅ Complete — structured skill profiling with hierarchical taxonomy |
+| 2 | Market Intelligence Agent | ✅ Complete — 31 RSS feeds, Claude Haiku extraction, biweekly pipeline |
+| 3 | Skill Gap Analyzer | ✅ Complete — dbt 3-layer modeling, custom scoring formulas, automated reports |
+| 4 | Learning Path Updater | ✅ Complete — recommendations with approve/reject, auto-commit reports |
+| 5 | Multi-User App + Learning Lab | ✅ Complete — Streamlit app with auth, dashboard, integrated tutor |
+
+## App pages
+
+| Page | What it does |
+|------|----------------|
+| **Dashboard** | Overview of your profile, gaps, and recent activity at a glance. |
+| **Learning Lab** | Practice and assessments per topic with AI feedback on your answers. |
+| **Recommendations** | Review proposed next steps from the latest analysis and approve or reject them. |
+| **Reports** | Read biweekly markdown intelligence reports generated by the pipeline. |
+| **Learn** | Study paths, theory, and documentation aligned to your curriculum. |
+| **Downloads** | Export or access artifacts and materials you need offline or for sharing. |
 
 ## Key numbers
 
 | Metric | Value |
-|--------|-------|
+|--------|--------|
 | RSS feeds monitored | 31 (7 categories) |
-| Articles ingested per run | ~1,715 |
-| Market signals extracted | 940+ |
-| Extraction cost | ~$0.30 per full run |
-| dbt models | 6 staging · 3 intermediate · 2 mart |
-| dbt schema tests | 30+ |
-| Supabase tables | 14+ (RLS on every table) |
-| Build time | ~3 months · 3–4 hours/week |
+| Curriculum topics | 28 (20 DE + 4 AI literacy + 4 business analysis) |
+| Supabase tables | 19 (all with RLS) |
+| dbt models | 11 (6 staging + 3 intermediate + 2 marts) |
+| dbt tests | 42+ |
+| Skill categories | 6 |
+| Pipeline cost (Haiku extraction) | ~$0.30 per run |
 
----
+## Automated pipeline
 
-## Tech stack
+Every two weeks, **Sunday 06:00 UTC**, **zero human input**:
 
-Supabase (PostgreSQL + Auth + RLS) · dbt Core · Python · Claude API · GitHub Actions · Cursor · Streamlit
-
----
-
-## Modules
-
-| # | Module | What it does |
-|---|--------|--------------|
-| 1 | **Profile Engine** | Onboarding questionnaire + Claude CV parsing → complete skill profile in Supabase |
-| 2 | **Market Intelligence Agent** | 31 RSS feeds → Claude Haiku batch extraction → market signals stored in Supabase |
-| 3 | **Skill Gap Analyzer + Reports** | dbt joins signals with user skills → gap scores → Claude Sonnet recommendations → markdown report auto-committed to GitHub |
-| 4 | **Learning Path Updater** | Approved recommendations update curriculum priorities · auto-commit pipeline · Mermaid architecture diagram |
-| 5 | **Multi-User App + Learning Lab** | Streamlit frontend · Supabase Auth · integrated Learning Lab with Claude-powered answer evaluation · assessment results auto-update skill profile |
-
----
-
-## Screenshots
-
-### Recommendations
-![Recommendations](docs/screenshots/Recommendations.png)
-
-### Learning Lab — Question
-![Learning Lab Question](docs/screenshots/Learning%20Lab%20Question.png)
-
-### Learning Lab — Correct feedback
-![Learning Lab Correct](docs/screenshots/Learning%20Lab%20Correct.png)
-
-### Learning Lab — Wrong feedback
-![Learning Lab Wrong](docs/screenshots/Learning%20Lab%20Wrong.png)
-![Learning Lab Wrong 2](docs/screenshots/Learning%20Lab%20Wrong2.png)
-![Learning Lab Wrong 3](docs/screenshots/Learning%20Lab%20Wrong3.png)
-
-### Biweekly report
-![Biweekly report](docs/screenshots/Biweekly%20report.png)
-
----
-
-## Architecture principles
-
-- **Multi-user from day 1** — every table has `user_id`, every query is RLS-scoped, auth is Supabase Auth
-- **Cost-conscious AI** — Claude Haiku for extraction (~$0.30/run), Sonnet reserved for personalization; same content never analyzed twice
-- **Automation over manual** — zero human steps from cron trigger to committed report
-- **Complexity is the enemy** — no LangChain, no FastAPI, no Airflow; every tool earns its place
-- **Portfolio-grade code** — every architectural decision logged in [DECISIONS.md](docs/DECISIONS.md) with date and rationale
-
----
+1. **RSS collect** — fetch new items from all configured feeds  
+2. **Haiku extract** — turn articles into structured market signals  
+3. **dbt build** — run staging → intermediate → marts and tests  
+4. **Sonnet recommend** — generate personalized learning recommendations  
+5. **Report generate** — write the biweekly markdown report  
+6. **Auto-commit** — commit the report (and related outputs) back to the repository  
 
 ## Documentation
 
-- [Product Brief](docs/PRODUCT_BRIEF.md) — what this is and why
-- [Decision Log](docs/DECISIONS.md) — every architectural decision with reasoning
-- [Current Status](docs/STATUS.md) — where the project is right now
-
----
+- [Product Brief](docs/PRODUCT_BRIEF.md)
+- [Decision Log](docs/DECISIONS.md)
+- [System Architecture](docs/architecture/system-overview.md)
 
 ## Author
 
-Built by [Romi](https://github.com/romcamaky) as part of the [From Analyst to AI-Native Engineer](https://github.com/romcamaky/AI-Native-Data-Engineer-Journey) journey.
+Built by [Romi](https://github.com/romcamaky).
 
 ## License
 
