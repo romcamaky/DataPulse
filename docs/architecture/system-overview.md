@@ -2,7 +2,7 @@
 
 # DataPulse — System Overview
 
-DataPulse is a personal AI career intelligence platform for data analysts and engineers: it ingests public market signals from RSS, combines them with your profile and skills in Supabase, and uses dbt plus Claude to surface skill gaps, learning recommendations, and a readable weekly markdown report. It is built as a portfolio-grade, multi-tenant-ready pipeline (RLS, clear module boundaries) with minimal moving parts—plain Python, dbt Core, and GitHub Actions—so you can explain and own every layer.
+DataPulse is a personal AI career intelligence platform for data analysts and engineers: it ingests public market signals from RSS, combines them with your profile and skills in Supabase, and uses dbt plus Claude to surface skill gaps, learning recommendations, and a readable biweekly markdown report. It is built as a portfolio-grade, multi-tenant-ready pipeline (RLS, clear module boundaries) with minimal moving parts—plain Python, dbt Core, and GitHub Actions—so you can explain and own every layer.
 
 ---
 
@@ -13,10 +13,10 @@ A Mermaid flowchart (top-down) showing the full data flow.
 ```mermaid
 flowchart TD
     subgraph Sources["External Sources"]
-        RSS[37 RSS Feeds]
+        RSS[31 RSS Feeds]
     end
 
-    subgraph Pipeline["Weekly Pipeline — GitHub Actions (Sunday 06:00 UTC)"]
+    subgraph Pipeline["Biweekly Pipeline — GitHub Actions (Sunday 06:00 UTC)"]
         COL[collector.py\nFetch + upsert feed_items]
         EXT[extractor.py\nClaude API → market_signals]
         DBT[dbt Core\nstaging → intermediate → marts]
@@ -88,7 +88,7 @@ flowchart TD
 
 ### Module 4 — Learning Path Updater + Testing
 
-- What it does: Focus for this phase includes wiring operational concerns around the weekly loop: the GitHub Actions workflow already generates the markdown report and auto-commits `docs/reports/` to the repo (`Commit report to repository`), while a `dbt run` step remains a placeholder until Module 4 monitoring; broader “learning path updater” behavior and automated testing are still in progress.
+- What it does: Focus for this phase includes wiring operational concerns around the biweekly pipeline run: the GitHub Actions workflow already generates the markdown report and auto-commits `docs/reports/` to the repo (`Commit report to repository`), while a `dbt run` step remains a placeholder until Module 4 monitoring; broader “learning path updater” behavior and automated testing are still in progress.
 - Status: 🟡 In progress
 
 ### Module 5 — Multi-User App (Capstone)
@@ -106,12 +106,12 @@ flowchart TD
 | Transformations | dbt Core | 3-layer modeling: staging → intermediate → marts |
 | Pipeline | Python | Ingestion, Claude API integration, report generation |
 | Intelligence | Claude API (Anthropic) | Trend extraction, skill gap recommendations |
-| Automation | GitHub Actions | Weekly cron, CI/CD, report auto-commit |
+| Automation | GitHub Actions | Biweekly pipeline (Sunday 06:00 UTC; even ISO weeks on schedule), CI/CD, report auto-commit |
 | Version Control | GitHub | Public portfolio repo |
 
 ---
 
-## Data Flow — Weekly Cycle
+## Data Flow — Biweekly pipeline
 
 1. **Trigger** — The workflow `.github/workflows/market_intelligence.yml` runs on a cron schedule (**Sunday 06:00 UTC**) or via **`workflow_dispatch`** (manual run from the Actions tab).
 2. **Biweekly gate** — On **scheduled** runs only, a shell step checks the **ISO week number**: if it is **odd**, the rest of the job is skipped (biweekly cost control). **Manual** runs always continue.
@@ -132,6 +132,6 @@ flowchart TD
 - **No LangChain / CrewAI / Airflow** — Plain Python plus the Claude API keeps the pipeline small, cheap, and explainable (see tech stack exclusions in the decision log).
 - **Hierarchical skills taxonomy** — Canonical `skills` with `parent_skill_id` (self-referencing FK) so market signals and user skills normalize to one vocabulary.
 - **Service role for pipeline writes** — Batch jobs use the Supabase **service role** key to bypass RLS for trusted writes (e.g. `market_signals`, `recommendations`); authenticated clients use RLS-scoped reads/updates as designed.
-- **Biweekly pipeline gate** — RSS + extraction (and thus much of the scheduled job) runs only on **even ISO weeks** to control API cost while keeping a weekly cron slot.
+- **Biweekly pipeline gate** — RSS + extraction (and thus much of the scheduled job) runs only on **even ISO weeks** to control API cost while the Actions workflow still triggers every **Sunday 06:00 UTC** (odd-week runs skip the heavy steps).
 
 ---
