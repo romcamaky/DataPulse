@@ -125,10 +125,10 @@ def _md_to_pdf_bytes(title: str, markdown_content: str) -> bytes:
     pdf = FPDF()
     pdf.add_page()
 
-    # Title — sanitized; reset X so multi_cell(0, ...) has full line width
+    # Title — sanitized; use explicit epw (not w=0) so width does not depend on cursor
     pdf.set_font("Helvetica", style="B", size=16)
     pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(0, 10, _safe(title))
+    pdf.multi_cell(pdf.epw, 10, _safe(title))
     pdf.ln(4)
 
     # Body — strip markdown symbols, sanitize, render line by line
@@ -147,7 +147,7 @@ def _md_to_pdf_bytes(title: str, markdown_content: str) -> bytes:
                 pdf.ln()
                 pdf.set_x(pdf.l_margin)
             pdf.set_x(pdf.l_margin)
-            pdf.multi_cell(0, 7, _safe(subline))
+            pdf.multi_cell(pdf.epw, 7, _safe(subline))
 
     return bytes(pdf.output())
 
