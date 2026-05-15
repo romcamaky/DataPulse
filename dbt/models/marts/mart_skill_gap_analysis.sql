@@ -1,3 +1,23 @@
+{#
+  Re-apply RLS after each dbt rebuild: per-user SELECT for authenticated;
+  writes denied (service role bypasses RLS for pipeline jobs).
+#}
+{{
+  config(
+    post_hook=[
+      "ALTER TABLE {{ this }} ENABLE ROW LEVEL SECURITY",
+      "DROP POLICY IF EXISTS mart_skill_gap_select_own ON {{ this }}",
+      "CREATE POLICY mart_skill_gap_select_own ON {{ this }} FOR SELECT TO authenticated USING (auth.uid() = user_id)",
+      "DROP POLICY IF EXISTS mart_skill_gap_insert_deny ON {{ this }}",
+      "CREATE POLICY mart_skill_gap_insert_deny ON {{ this }} FOR INSERT TO authenticated WITH CHECK (false)",
+      "DROP POLICY IF EXISTS mart_skill_gap_update_deny ON {{ this }}",
+      "CREATE POLICY mart_skill_gap_update_deny ON {{ this }} FOR UPDATE TO authenticated USING (false)",
+      "DROP POLICY IF EXISTS mart_skill_gap_delete_deny ON {{ this }}",
+      "CREATE POLICY mart_skill_gap_delete_deny ON {{ this }} FOR DELETE TO authenticated USING (false)",
+    ],
+  )
+}}
+
 /*
   mart_skill_gap_analysis
   Purpose: Ranked skill gaps per user for recommendations and reporting (materialized for Python consumers).

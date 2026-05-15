@@ -1,3 +1,23 @@
+{#
+  Re-apply RLS after each dbt rebuild: global SELECT for authenticated;
+  writes denied (service role bypasses RLS for pipeline jobs).
+#}
+{{
+  config(
+    post_hook=[
+      "ALTER TABLE {{ this }} ENABLE ROW LEVEL SECURITY",
+      "DROP POLICY IF EXISTS mart_trend_summary_select_authenticated ON {{ this }}",
+      "CREATE POLICY mart_trend_summary_select_authenticated ON {{ this }} FOR SELECT TO authenticated USING (true)",
+      "DROP POLICY IF EXISTS mart_trend_summary_insert_deny ON {{ this }}",
+      "CREATE POLICY mart_trend_summary_insert_deny ON {{ this }} FOR INSERT TO authenticated WITH CHECK (false)",
+      "DROP POLICY IF EXISTS mart_trend_summary_update_deny ON {{ this }}",
+      "CREATE POLICY mart_trend_summary_update_deny ON {{ this }} FOR UPDATE TO authenticated USING (false)",
+      "DROP POLICY IF EXISTS mart_trend_summary_delete_deny ON {{ this }}",
+      "CREATE POLICY mart_trend_summary_delete_deny ON {{ this }} FOR DELETE TO authenticated USING (false)",
+    ],
+  )
+}}
+
 /*
   mart_trend_summary
   Purpose: Top trending skills in the last 90 days for weekly report headers.
