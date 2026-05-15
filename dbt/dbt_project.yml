@@ -8,7 +8,13 @@ models:
   datapulse:
     staging:
       +materialized: view
+      # Run as the querying role so base-table RLS applies (not postgres/definer owner).
+      +post-hook:
+        - "ALTER VIEW {{ this }} SET (security_invoker = true)"
     intermediate:
       +materialized: view
+      # Same as staging: invoker semantics for PostgREST authenticated reads.
+      +post-hook:
+        - "ALTER VIEW {{ this }} SET (security_invoker = true)"
     marts:
       +materialized: table
