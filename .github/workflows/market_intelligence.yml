@@ -59,6 +59,8 @@ jobs:
         with:
           # Required so later git push can authenticate using the persisted token.
           persist-credentials: true
+          # Full history so pull --rebase before push is reliable.
+          fetch-depth: 0
 
       - name: 🐍 Set up Python 3.12
         if: steps.biweekly.outputs.skip != 'true'
@@ -87,19 +89,16 @@ jobs:
           shell: bash
           command: bash scripts/ci_market_pipeline.sh
 
-      # Stage and commit only when the report file changed; push uses the Actions token from checkout.
+      # Pull --rebase before push so concurrent commits on main do not reject the bot push.
       - name: Commit report to repository
         if: steps.biweekly.outputs.skip != 'true'
-        env:
-          # Built-in token — do not create a repo secret named GITHUB_TOKEN.
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git config user.name "DataPulse Bot"
-          git config user.email "datapulse-bot@users.noreply.github.com"
-          git add docs/reports/
-          git diff --staged --quiet || git commit -m "chore: weekly career intelligence report $(date -u +%Y-%m-%d) [skip ci]"
-          git push
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 5
+          retry_wait_seconds: 60
+          shell: bash
+          command: bash scripts/ci_commit_report.sh
 
       - name: 📧 Email alert after failed attempts
         if: failure() && steps.biweekly.outputs.skip != 'true'
@@ -122,4 +121,4 @@ jobs:
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             Trigger: ${{ github.event_name }}
 
-            Check the workflow logs for the failing step (collector, extractor, dbt, or report).
+            Check the workflow logs for the failing step (pipeline, commit/push, or email).
