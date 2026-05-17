@@ -19,6 +19,33 @@ _SESSION_REFRESH_TOKEN: Final[str] = "refresh_token"
 _SESSION_CLIENT_KEY: Final[str] = "supabase_user_client"
 
 
+def bind_postgrest_user_jwt(client: Client, access_token: str) -> None:
+    """Ensure PostgREST table/RPC calls send the user JWT for RLS (auth.uid())."""
+    bearer = f"Bearer {access_token}"
+    client.options.headers["Authorization"] = bearer
+    client.auth._headers["Authorization"] = bearer
+    client._storage = None
+    client._functions = None
+    # Eagerly (re)build PostgREST and set the bearer on its own header object.
+    client._postgrest = None
+    client.postgrest.auth(access_token)
+
+
+def resolve_auth_user_id(client: Client, access_token: str) -> str:
+    """Return auth.users id from the access token (JWT sub) and sync session user."""
+    bind_postgrest_user_jwt(client, access_token)
+    response = client.auth.get_user(access_token)
+    user = response.user if response else None
+    if user is None or not user.id:
+        raise ValueError("Could not resolve authenticated user from access token.")
+    user_id = str(user.id)
+    st.session_state["user"] = {
+        "id": user_id,
+        "email": getattr(user, "email", None),
+    }
+    return user_id
+
+
 def get_authenticated_client() -> Client:
     """
     Return a Supabase client authenticated with the current session tokens.
@@ -51,6 +78,11 @@ def get_authenticated_client() -> Client:
 
     client = create_client(supabase_url, anon_key)
     client.auth.set_session(access_token, refresh_token)
+    try:
+        resolve_auth_user_id(client, access_token)
+    except ValueError:
+        st.warning("Session expired or invalid. Please log in again.")
+        st.stop()
     st.session_state[_SESSION_CLIENT_KEY] = client
     return client
 

@@ -153,10 +153,6 @@ def _ensure_user_session(client: Client) -> None:
     if not access_token:
         return
 
-    # If user information already exists, keep it.
-    if st.session_state.get("user"):
-        return
-
     try:
         response = client.auth.get_user(access_token)
         user = getattr(response, "user", None)

@@ -14,7 +14,8 @@ from supabase import Client
 from uuid import uuid4
 
 from datapulse.config import get_anthropic_key
-from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.streamlit_auth import bind_postgrest_user_jwt, get_authenticated_client
+from datapulse.supabase_rest import insert_questions_bank_row
 from datapulse.study_docs import generate_study_doc_after_session
 from datapulse.ui.styles import inject_global_styles
 
@@ -145,14 +146,46 @@ def render_topic_selector(client: Client) -> tuple[str | None, str | None]:
     return topic_id, st.session_state.get("lab_mode")
 
 
+def _insert_generated_question(
+    client: Client,
+    access_token: str,
+    row: dict[str, Any],
+) -> None:
+    """Persist one generated question; prefers migration 012 RPC when available."""
+    bind_postgrest_user_jwt(client, access_token)
+    rpc_params = {
+        "p_topic_id": row["topic_id"],
+        "p_question_type": row["question_type"],
+        "p_difficulty": row["difficulty"],
+        "p_question_text": row["question_text"],
+        "p_sample_data": row.get("sample_data"),
+        "p_expected_answer": row["expected_answer"],
+        "p_hints": row.get("hints") or "",
+    }
+    try:
+        client.rpc("insert_questions_bank_question", rpc_params).execute()
+    except Exception as rpc_err:
+        err_text = str(rpc_err)
+        if "PGRST202" in err_text or "Could not find the function" in err_text:
+            insert_questions_bank_row(access_token, row)
+            return
+        raise
+
+
 def generate_questions(
     client: Client,
     topic_id: str,
     topic_title: str,
     topic_number: int,
+    user_id: str,
     count: int = 5,
+    access_token: str | None = None,
 ) -> None:
     """Generate and insert new practice questions for a topic using Claude Haiku."""
+    if not access_token:
+        st.warning("Question generation failed: not authenticated (missing access token).")
+        return
+
     # Resolve API key first so this function can fail fast and non-fatally.
     api_key = get_anthropic_key()
     if not api_key:
@@ -232,7 +265,7 @@ def generate_questions(
             st.warning("Question generation failed: response was not a JSON array.")
             return
 
-        # Build rows for deduplicated insert/upsert into questions_bank.
+        # Build rows for insert into questions_bank.
         insert_rows: list[dict[str, Any]] = []
         for item in parsed:
             if not isinstance(item, dict):
@@ -270,12 +303,22 @@ def generate_questions(
             st.warning("Question generation failed: no valid question rows parsed.")
             return
 
-        # Upsert with conflict target to avoid duplicates when regenerating.
-        client.table("questions_bank").upsert(
-            insert_rows,
-            on_conflict="topic_id,question_type,difficulty,question_text",
-            ignore_duplicates=True,
-        ).execute()
+        # Insert questions one at a time so duplicate-key collisions (Claude
+        # happening to generate a question that matches the unique dedupe
+        # index — including against seeded rows with created_by IS NULL)
+        # don't fail the entire batch. Using .insert() instead of .upsert()
+        # avoids the ON CONFLICT DO UPDATE path, which is blocked by the
+        # questions_bank_update_own policy on seeded rows.
+        for row in insert_rows:
+            try:
+                _insert_generated_question(client, access_token, row)
+            except Exception as e:
+                # Duplicate-key violation is expected when Claude regenerates
+                # an existing question — log and skip. Anything else surfaces.
+                error_text = str(e)
+                if "23505" in error_text or "duplicate key" in error_text.lower():
+                    continue
+                raise
 
     except json.JSONDecodeError as e:
         st.warning(f"Question generation failed: invalid JSON from Claude ({e}).")
@@ -369,9 +412,10 @@ def smart_load_question(
     # Trigger non-blocking generation when unseen pool is running low.
     if len(pool_a) < 3:
         topic_title, topic_number = _topic_meta_or_fallback(client, topic_id)
+        bg_access_token = st.session_state.get("access_token")
         threading.Thread(
             target=generate_questions,
-            args=(client, topic_id, topic_title, topic_number, 5),
+            args=(client, topic_id, topic_title, topic_number, user_id, 5, bg_access_token),
             daemon=True,
         ).start()
 
@@ -707,7 +751,15 @@ def render_practice_mode(client: Client, user_id: str, topic_id: str) -> None:
         # If no question exists yet, try generating a starter set for this topic.
         topic_title, topic_number = _topic_meta_or_fallback(client, topic_id)
         with st.spinner("Generating questions for this topic..."):
-            generate_questions(client, topic_id, topic_title, topic_number, count=5)
+            generate_questions(
+                client,
+                topic_id,
+                topic_title,
+                topic_number,
+                user_id,
+                count=5,
+                access_token=st.session_state.get("access_token"),
+            )
             question = smart_load_question(client, topic_id, user_id)
             st.session_state["lab_question"] = question
 
