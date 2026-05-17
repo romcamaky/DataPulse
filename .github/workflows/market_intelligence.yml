@@ -1,6 +1,10 @@
 # DataPulse — Market Intelligence Pipeline
 # Runs biweekly: collects RSS feeds and extracts market signals via Claude API
 # Can also be triggered manually from the GitHub Actions tab
+#
+# Retries: up to 5 attempts, 5 minutes apart. After the 5th failure, sends email
+# (requires GitHub secrets: PIPELINE_ALERT_EMAIL, SMTP_HOST, SMTP_PORT,
+# SMTP_USERNAME, SMTP_PASSWORD).
 
 name: Market Intelligence Pipeline
 
@@ -21,7 +25,7 @@ env:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
     # Allow pushing the generated report back to the repo (GITHUB_TOKEN).
     permissions:
       contents: write
@@ -66,38 +70,22 @@ jobs:
         if: steps.biweekly.outputs.skip != 'true'
         run: pip install -e .
 
-      - name: 📡 Collect RSS feeds
+      - name: 🔄 Run pipeline (retry on failure)
         if: steps.biweekly.outputs.skip != 'true'
-        continue-on-error: true
-        run: python -m datapulse.collector
-
-      - name: 🧠 Extract market signals
-        if: steps.biweekly.outputs.skip != 'true'
-        run: python -m datapulse.extractor
-
-      - name: 🔄 Run dbt models
-        if: steps.biweekly.outputs.skip != 'true'
+        id: pipeline_retry
+        uses: nick-fields/retry@v3
         env:
           SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_DB_USER: ${{ secrets.SUPABASE_DB_USER }}
           SUPABASE_DB_NAME: ${{ secrets.SUPABASE_DB_NAME }}
           SUPABASE_DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
-        run: |
-          pip install dbt-postgres
-          cd dbt
-          dbt run --profiles-dir .
-          dbt test --profiles-dir .
-
-      # Writes docs/reports/YYYY-MM-DD.md via Supabase (same credentials as local dev).
-      - name: Generate career intelligence report
-        if: steps.biweekly.outputs.skip != 'true'
-        continue-on-error: false
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python -m datapulse.report
+        with:
+          timeout_minutes: 25
+          max_attempts: 5
+          retry_wait_seconds: 300
+          shell: bash
+          command: bash scripts/ci_market_pipeline.sh
 
       # Stage and commit only when the report file changed; push uses the Actions token from checkout.
       - name: Commit report to repository
@@ -112,3 +100,26 @@ jobs:
           git add docs/reports/
           git diff --staged --quiet || git commit -m "chore: weekly career intelligence report $(date -u +%Y-%m-%d) [skip ci]"
           git push
+
+      - name: 📧 Email alert after failed attempts
+        if: failure() && steps.biweekly.outputs.skip != 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "DataPulse pipeline failed after 5 attempts"
+          to: ${{ secrets.PIPELINE_ALERT_EMAIL }}
+          from: DataPulse Bot <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            The Market Intelligence Pipeline failed all 5 attempts
+            (5 minutes between attempts).
+
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Trigger: ${{ github.event_name }}
+
+            Check the workflow logs for the failing step (collector, extractor, dbt, or report).
