@@ -14,8 +14,8 @@ from supabase import Client
 from uuid import uuid4
 
 from datapulse.config import get_anthropic_key
-from datapulse.streamlit_auth import bind_postgrest_user_jwt, get_authenticated_client
-from datapulse.supabase_rest import insert_questions_bank_row
+from datapulse.streamlit_auth import get_authenticated_client
+from datapulse.supabase_rest import bind_postgrest_user_jwt, insert_questions_bank_row
 from datapulse.study_docs import generate_study_doc_after_session
 from datapulse.ui.styles import inject_global_styles
 

@@ -13,22 +13,11 @@ import streamlit as st
 from supabase import Client, create_client
 
 from datapulse.config import get_supabase_anon_key, get_supabase_url
+from datapulse.supabase_rest import bind_postgrest_user_jwt
 
 _SESSION_ACCESS_TOKEN: Final[str] = "access_token"
 _SESSION_REFRESH_TOKEN: Final[str] = "refresh_token"
 _SESSION_CLIENT_KEY: Final[str] = "supabase_user_client"
-
-
-def bind_postgrest_user_jwt(client: Client, access_token: str) -> None:
-    """Ensure PostgREST table/RPC calls send the user JWT for RLS (auth.uid())."""
-    bearer = f"Bearer {access_token}"
-    client.options.headers["Authorization"] = bearer
-    client.auth._headers["Authorization"] = bearer
-    client._storage = None
-    client._functions = None
-    # Eagerly (re)build PostgREST and set the bearer on its own header object.
-    client._postgrest = None
-    client.postgrest.auth(access_token)
 
 
 def resolve_auth_user_id(client: Client, access_token: str) -> str:
