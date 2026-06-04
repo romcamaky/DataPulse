@@ -53,12 +53,13 @@ if [[ ! -x "$DBT_EXE" ]]; then
   echo "ERROR: pip dbt not found at ${DBT_EXE}" >&2
   exit 1
 fi
-DBT_CORE_VER="$("$DBT_EXE" --version 2>&1 | head -n1)"
-echo "dbt CLI: ${DBT_CORE_VER} (${DBT_EXE})"
+DBT_CORE_VER="$(python -c 'import importlib.metadata as m; print(m.version("dbt-core"))')"
+echo "dbt-core ${DBT_CORE_VER} (${DBT_EXE})"
 case "$DBT_CORE_VER" in
-  *"1."*) ;;
+  1.*) ;;
   *)
-    echo "ERROR: expected dbt 1.x (postgres adapter), got: ${DBT_CORE_VER}" >&2
+    echo "ERROR: expected dbt-core 1.x (postgres adapter), got ${DBT_CORE_VER}" >&2
+    "$DBT_EXE" --version >&2 || true
     exit 1
     ;;
 esac
