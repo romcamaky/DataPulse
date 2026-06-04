@@ -46,8 +46,8 @@ fi
 
 python -m datapulse.extractor
 
-# Pin dbt 1.x. GHA runners may ship a global `dbt` (Fusion 2.0) earlier on PATH than pip's binary.
-pip install -q --force-reinstall "dbt-postgres==1.10.0"
+# dbt-postgres 1.10 alone can resolve to dbt-core 2.0 (Fusion) since 2026-06-01; pin core <2.
+pip install -q --force-reinstall "dbt-core>=1.10,<2" "dbt-postgres==1.10.0"
 DBT_EXE="$(dirname "$(command -v python)")/dbt"
 if [[ ! -x "$DBT_EXE" ]]; then
   echo "ERROR: pip dbt not found at ${DBT_EXE}" >&2
