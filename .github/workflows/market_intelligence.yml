@@ -100,8 +100,32 @@ jobs:
           shell: bash
           command: bash scripts/ci_commit_report.sh
 
-      - name: 📧 Email alert after failed attempts
+      # action-send-mail requires a non-empty to/cc/bcc; skip when alert secrets are missing.
+      - name: Check pipeline alert email configured
         if: failure() && steps.biweekly.outputs.skip != 'true'
+        id: alert_email
+        env:
+          PIPELINE_ALERT_EMAIL: ${{ secrets.PIPELINE_ALERT_EMAIL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -z "${PIPELINE_ALERT_EMAIL}" ] && missing+=("PIPELINE_ALERT_EMAIL")
+          [ -z "${SMTP_HOST}" ] && missing+=("SMTP_HOST")
+          [ -z "${SMTP_USERNAME}" ] && missing+=("SMTP_USERNAME")
+          [ -z "${SMTP_PASSWORD}" ] && missing+=("SMTP_PASSWORD")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Pipeline alert email skipped — set Actions secrets: ${missing[*]}. See docs/deploy-checklist.md."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 📧 Email alert after failed attempts
+        if: failure() && steps.biweekly.outputs.skip != 'true' && steps.alert_email.outputs.configured == 'true'
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_HOST }}
