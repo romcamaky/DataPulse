@@ -46,12 +46,26 @@ fi
 
 python -m datapulse.extractor
 
-# Pin 1.x: unversioned install recently pulled dbt-core 2.0 (Fusion), which rejects postgres.
-pip install -q "dbt-postgres==1.10.0"
+# Pin dbt 1.x. GHA runners may ship a global `dbt` (Fusion 2.0) earlier on PATH than pip's binary.
+pip install -q --force-reinstall "dbt-postgres==1.10.0"
+DBT_EXE="$(dirname "$(command -v python)")/dbt"
+if [[ ! -x "$DBT_EXE" ]]; then
+  echo "ERROR: pip dbt not found at ${DBT_EXE}" >&2
+  exit 1
+fi
+DBT_CORE_VER="$("$DBT_EXE" --version 2>&1 | head -n1)"
+echo "dbt CLI: ${DBT_CORE_VER} (${DBT_EXE})"
+case "$DBT_CORE_VER" in
+  *"1."*) ;;
+  *)
+    echo "ERROR: expected dbt 1.x (postgres adapter), got: ${DBT_CORE_VER}" >&2
+    exit 1
+    ;;
+esac
 (
   cd dbt
-  dbt run --profiles-dir .
-  dbt test --profiles-dir .
+  "$DBT_EXE" run --profiles-dir .
+  "$DBT_EXE" test --profiles-dir .
 )
 
 python -m datapulse.report
