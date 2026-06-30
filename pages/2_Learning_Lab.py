@@ -13,7 +13,7 @@ import streamlit as st
 from supabase import Client
 from uuid import uuid4
 
-from datapulse.config import get_anthropic_key
+from datapulse.config import CLAUDE_SONNET_MODEL, get_anthropic_key
 from datapulse.streamlit_auth import get_authenticated_client
 from datapulse.supabase_rest import bind_postgrest_user_jwt, insert_questions_bank_row
 from datapulse.study_docs import generate_study_doc_after_session
@@ -21,7 +21,7 @@ from datapulse.ui.styles import inject_global_styles
 
 inject_global_styles()
 
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = CLAUDE_SONNET_MODEL
 CLAUDE_SYSTEM_PROMPT = (
     "You are a tutor reviewing a student's answer on data, AI, or business analysis topics. "
     "Be direct and constructive. Identify what is correct, what is wrong, "

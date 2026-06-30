@@ -38,7 +38,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: [0, 1, 2, 3, 4, 5]
+              arguments:
+                values: [0, 1, 2, 3, 4, 5]
 
   - name: stg_user_target_roles
     description: Target roles per user (staging)
@@ -83,19 +84,22 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values:
-                - skill_demand
-                - tool_adoption
-                - trend_emerging
-                - trend_declining
-                - regulatory_update
+              arguments:
+                values:
+                  - skill_demand
+                  - tool_adoption
+                  - trend_emerging
+                  - trend_declining
+                  - regulatory_update
       - name: strength
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4, 5]
+              arguments:
+                values: [1, 2, 3, 4, 5]
       - name: confidence
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4, 5]
+              arguments:
+                values: [1, 2, 3, 4, 5]

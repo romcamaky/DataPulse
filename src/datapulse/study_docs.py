@@ -9,10 +9,10 @@ from datetime import datetime, timezone
 import anthropic
 from supabase import Client
 
-from datapulse.config import get_anthropic_key
+from datapulse.config import CLAUDE_SONNET_MODEL, get_anthropic_key
 
 
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = CLAUDE_SONNET_MODEL
 
 
 def _fetch_existing_doc(client: Client, user_id: str, topic_id: str) -> str | None:

@@ -11,6 +11,9 @@ from typing import Final
 from dotenv import load_dotenv
 import os
 
+# Current Sonnet generation on the Claude API (update here when Anthropic retires a snapshot).
+CLAUDE_SONNET_MODEL: Final[str] = "claude-sonnet-5"
+
 
 def get_anthropic_api_key() -> str:
     """

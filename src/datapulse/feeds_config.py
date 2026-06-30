@@ -53,7 +53,7 @@ FEEDS: list[FeedConfig] = [
     {
         "key": "supabase_blog",
         "name": "Supabase Blog",
-        "url": "https://supabase.com/blog/rss.xml",
+        "url": "https://supabase.com/rss.xml",
         "category": "vendor",
         "language": "en",
         "region": "global",

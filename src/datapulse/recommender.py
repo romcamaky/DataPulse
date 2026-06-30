@@ -18,13 +18,13 @@ from typing import Any, Final
 from anthropic import Anthropic
 from anthropic import APIConnectionError, APIError, RateLimitError
 
-from datapulse.config import get_anthropic_api_key
+from datapulse.config import CLAUDE_SONNET_MODEL, get_anthropic_api_key
 from datapulse.extractor import extract_json_array_from_response
 
 LOGGER = logging.getLogger("datapulse.recommender")
 
 # Sonnet for richer personalization than Haiku (single call per user; cost controlled).
-_CLAUDE_MODEL: Final[str] = "claude-sonnet-4-20250514"
+_CLAUDE_MODEL: Final[str] = CLAUDE_SONNET_MODEL
 _MAX_TOKENS: Final[int] = 4096
 _RETRY_BACKOFF_SEC: Final[float] = 5.0
 

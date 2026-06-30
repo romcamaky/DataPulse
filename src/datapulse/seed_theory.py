@@ -14,9 +14,11 @@ from dotenv import load_dotenv
 import anthropic
 from supabase import create_client
 
+from datapulse.config import CLAUDE_SONNET_MODEL
+
 load_dotenv(override=True)  # Must run before os.environ reads below
 
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = CLAUDE_SONNET_MODEL
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ["SUPABASE_KEY"]
 
