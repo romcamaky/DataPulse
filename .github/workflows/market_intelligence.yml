@@ -1,5 +1,5 @@
 # DataPulse — Market Intelligence Pipeline
-# Runs biweekly: collects RSS feeds and extracts market signals via Claude API
+# Runs monthly: collects RSS feeds and extracts market signals via Claude API
 # Can also be triggered manually from the GitHub Actions tab
 #
 # Retries: up to 5 attempts, 5 minutes apart. After the 5th failure, sends email
@@ -10,8 +10,8 @@ name: Market Intelligence Pipeline
 
 on:
   schedule:
-    # Every Sunday 06:00 UTC; biweekly gating is applied in the "Check biweekly schedule" step
-    - cron: "0 6 * * 0"
+    # 1st of every month, 06:00 UTC.
+    - cron: "0 6 1 * *"
   workflow_dispatch:
 
 concurrency:
@@ -31,30 +31,7 @@ jobs:
       contents: write
 
     steps:
-      # Manual runs always execute. Scheduled runs only on even ISO week numbers (W01 skips, W02 runs, …).
-      - name: 📅 Check biweekly schedule
-        id: biweekly
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Manual workflow_dispatch — running full pipeline (week check skipped)."
-            exit 0
-          fi
-          WEEK=$(date -u +%V)
-          YEAR=$(date -u +%Y)
-          echo "Current date (UTC): $(date -u '+%Y-%m-%d %H:%M:%S'), ISO week: $WEEK ($YEAR)"
-          # Even ISO weeks: run pipeline. Odd weeks: skip (biweekly on a weekly cron).
-          if [ $((10#$WEEK % 2)) -eq 0 ]; then
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Biweekly run week (even ISO week $WEEK) — continuing."
-          else
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Skipping — not a biweekly run week."
-          fi
-
       - name: 📥 Checkout repository
-        if: steps.biweekly.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           # Required so later git push can authenticate using the persisted token.
@@ -63,17 +40,14 @@ jobs:
           fetch-depth: 0
 
       - name: 🐍 Set up Python 3.12
-        if: steps.biweekly.outputs.skip != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: 📦 Install dependencies
-        if: steps.biweekly.outputs.skip != 'true'
         run: pip install -e .
 
       - name: 🔄 Run pipeline (retry on failure)
-        if: steps.biweekly.outputs.skip != 'true'
         id: pipeline_retry
         uses: nick-fields/retry@v3
         env:
@@ -91,7 +65,6 @@ jobs:
 
       # Pull --rebase before push so concurrent commits on main do not reject the bot push.
       - name: Commit report to repository
-        if: steps.biweekly.outputs.skip != 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 5
@@ -102,7 +75,7 @@ jobs:
 
       # action-send-mail requires a non-empty to/cc/bcc; skip when alert secrets are missing.
       - name: Check pipeline alert email configured
-        if: failure() && steps.biweekly.outputs.skip != 'true'
+        if: failure()
         id: alert_email
         env:
           PIPELINE_ALERT_EMAIL: ${{ secrets.PIPELINE_ALERT_EMAIL }}
@@ -124,7 +97,7 @@ jobs:
           fi
 
       - name: 📧 Email alert after failed attempts
-        if: failure() && steps.biweekly.outputs.skip != 'true' && steps.alert_email.outputs.configured == 'true'
+        if: failure() && steps.alert_email.outputs.configured == 'true'
         continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:

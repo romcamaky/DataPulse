@@ -33,7 +33,7 @@ All 5 modules are shipped and running in production.
 |-----------|--------|
 | Live app | datapulse-jzzz4zerfhvdkhxmbyopzd.streamlit.app |
 | Repo | github.com/romcamaky/DataPulse |
-| Pipeline | Biweekly, Sunday 06:00 UTC via GitHub Actions |
+| Pipeline | Monthly, 1st 06:00 UTC via GitHub Actions |
 | Database | Supabase (19 tables, RLS on all) |
 | dbt | 11 models, 42+ tests |
 | RSS feeds | 31 across 7 categories |

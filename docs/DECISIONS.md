@@ -468,4 +468,14 @@ Append-only. Every architectural or product decision gets logged here with date,
 
 **Why:** Generating study docs after every practice answer is expensive (Sonnet each time) and produces fragmented notes. Batching every three answers balances cost with useful content accumulation.
 
+---
+
+## 2026-06-30 | Pipeline frequency — monthly over biweekly
+
+**Decision:** `market_intelligence.yml` runs once a month (cron `0 6 1 * *`, 1st of the month at 06:00 UTC) instead of biweekly. Removed the shell-based ISO-week gating step since the cron schedule itself now enforces the frequency.
+
+**Why:** For 1-2 users, even biweekly signal accumulation was more than needed — career intelligence and market trends don't shift meaningfully inside two weeks. Monthly further cuts Claude API cost and removes a source of workflow complexity (the ISO-week parity check added an extra step and an extra `if:` condition on every job step, with no benefit beyond what the cron schedule provides directly). Manual runs via `workflow_dispatch` are unaffected and always execute. Report titles and docs updated from "biweekly" to "monthly" for consistency.
+
+**Decided by:** Romi
+
 **Decided by:** Romi + CTO

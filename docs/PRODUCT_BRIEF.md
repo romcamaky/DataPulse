@@ -4,7 +4,7 @@
 
 DataPulse is a personal AI career intelligence platform for data analysts and engineers. It builds a complete profile of the user's skills, then continuously monitors the global data/AI ecosystem, compares market demand against the user's profile, identifies skill gaps, and generates personalized learning recommendations — all automatically.
 
-The user's main recurring interaction: every two weeks, read a report and approve or reject suggested changes to their learning plan. Everything else runs on its own.
+The user's main recurring interaction: once a month, read a report and approve or reject suggested changes to their learning plan. Everything else runs on its own.
 
 This is also a public portfolio project. Every component demonstrates real data engineering, analytics engineering, and AI integration skills. The code lives on GitHub, the architecture is documented, and the author can walk through every decision in an interview.
 
@@ -16,7 +16,7 @@ This is also a public portfolio project. Every component demonstrates real data 
 ┌─────────────────────────────────────┐
 │         PRESENTATION LAYER          │
 │  Streamlit multi-page app           │
-│  Biweekly reports (markdown → GitHub)│
+│  Monthly reports (markdown → GitHub) │
 │  DataPulse CLI tool                 │
 └──────────────────┬──────────────────┘
                    │
@@ -57,7 +57,7 @@ This is also a public portfolio project. Every component demonstrates real data 
 | Transformations | dbt Core + postgres adapter | 3-layer modeling, testable, portfolio-grade |
 | Backend/Pipeline | Python | Ingestion scripts, Claude API calls, CLI tool |
 | Intelligence | Claude API (Anthropic) | **Haiku** for high-volume extraction and answer grading; **Sonnet** for recommendations, study documentation, and theory — cost-conscious split |
-| Automation | GitHub Actions | Biweekly cron (Sunday 06:00 UTC), CI/CD, zero infrastructure cost |
+| Automation | GitHub Actions | Monthly cron (1st, 06:00 UTC), CI/CD, zero infrastructure cost |
 | Frontend | Streamlit | Python-only, free Community Cloud hosting, multi-page with native auth |
 | Dev tool | Cursor AI | Primary code generation tool |
 | Version control | GitHub | Public repo — this is a portfolio project |
@@ -74,7 +74,7 @@ Structured onboarding — questionnaire + CV upload. Claude API extracts structu
 
 ### Module 2: Market Intelligence Agent
 
-Python script fetches 31 curated RSS feeds across seven categories. Claude Haiku batch-analyzes articles → extracts technologies, trends, skill demands → stores in market_signals. Runs automatically on a biweekly schedule via GitHub Actions cron (Sunday 06:00 UTC).
+Python script fetches 31 curated RSS feeds across seven categories. Claude Haiku batch-analyzes articles → extracts technologies, trends, skill demands → stores in market_signals. Runs automatically on a monthly schedule via GitHub Actions cron (1st of the month, 06:00 UTC).
 
 ### Module 3: Skill Gap Analyzer + Reports
 
@@ -86,7 +86,7 @@ Approved recommendations update curriculum priorities. Architecture documentatio
 
 ### Module 5: Multi-User App — Capstone
 
-Supabase Auth, RLS policies, Streamlit multi-page frontend with onboarding flow, dashboard, recommendations, and biweekly reports. Learning Lab for practice and assessment with AI grading; Learn Mode for theory content and Q&A; study documentation generated from sessions; Downloads page for Markdown and PDF exports; invite-only access for cost control.
+Supabase Auth, RLS policies, Streamlit multi-page frontend with onboarding flow, dashboard, recommendations, and monthly reports. Learning Lab for practice and assessment with AI grading; Learn Mode for theory content and Q&A; study documentation generated from sessions; Downloads page for Markdown and PDF exports; invite-only access for cost control.
 
 ### Post-launch features
 
@@ -99,9 +99,9 @@ Supabase Auth, RLS policies, Streamlit multi-page frontend with onboarding flow,
 
 ---
 
-## Biweekly Automated Cycle
+## Monthly Automated Cycle
 
-Every two weeks, on Sunday at 06:00 UTC, zero human input:
+Once a month, on the 1st at 06:00 UTC, zero human input:
 
 1. RSS Collector → fetch feeds → store raw in Supabase (`feed_items`)
 2. Claude Haiku → analyze articles → extract signals → `market_signals`
@@ -128,7 +128,7 @@ Your effort: read the report, approve or reject suggestions.
 
 - Supabase instance: 19 tables, RLS on all, Frankfurt region
 - dbt project: 11 models (6 staging + 3 intermediate + 2 marts), 42+ tests
-- GitHub Actions: biweekly market intelligence pipeline; dbt build + test on PRs as configured
+- GitHub Actions: monthly market intelligence pipeline; dbt build + test on PRs as configured
 - Streamlit Community Cloud: live app deployment
 - GitHub repo: [github.com/romcamaky/DataPulse](https://github.com/romcamaky/DataPulse)
 

@@ -2,7 +2,7 @@
 
 # DataPulse — System Overview
 
-DataPulse is a personal AI career intelligence platform for data analysts and engineers: it ingests public market signals from RSS, combines them with your profile and skills in Supabase, and uses dbt plus Claude to surface skill gaps, learning recommendations, and a readable biweekly markdown report. It is built as a portfolio-grade, multi-tenant-ready pipeline (RLS, clear module boundaries) with minimal moving parts—plain Python, dbt Core, and GitHub Actions—so you can explain and own every layer.
+DataPulse is a personal AI career intelligence platform for data analysts and engineers: it ingests public market signals from RSS, combines them with your profile and skills in Supabase, and uses dbt plus Claude to surface skill gaps, learning recommendations, and a readable monthly markdown report. It is built as a portfolio-grade, multi-tenant-ready pipeline (RLS, clear module boundaries) with minimal moving parts—plain Python, dbt Core, and GitHub Actions—so you can explain and own every layer.
 
 ---
 
@@ -16,7 +16,7 @@ flowchart TD
         RSS[31 RSS Feeds]
     end
 
-    subgraph Pipeline["Biweekly Pipeline — GitHub Actions (Sunday 06:00 UTC)"]
+    subgraph Pipeline["Monthly Pipeline — GitHub Actions (1st, 06:00 UTC)"]
         COL[collector.py\nFetch + upsert feed_items]
         EXT[extractor.py\nClaude API → market_signals]
         DBT[dbt Core\nstaging → intermediate → marts]
@@ -75,7 +75,7 @@ flowchart TD
 - What it does: On a schedule, fetches many RSS sources defined in code, deduplicates and stores articles in `feed_items`, then runs a batch extractor that calls Claude to produce structured `market_signals` linked to the skills dimension where possible.
 - Key files: `src/datapulse/collector.py`, `src/datapulse/extractor.py`, `src/datapulse/feeds_config.py`
 - Schema: `feed_items`, `market_signals`
-- Automation: `market_intelligence.yml` — Sunday 06:00 UTC, biweekly (even ISO weeks only on schedule; manual runs always execute)
+- Automation: `market_intelligence.yml` — monthly, 1st of the month at 06:00 UTC (manual runs always execute)
 - Status: ✅ Complete
 
 ### Module 3 — Skill Gap Analyzer + Report Generator
@@ -88,7 +88,7 @@ flowchart TD
 
 ### Module 4 — Learning Path Updater + Testing
 
-- What it does: Focus for this phase includes wiring operational concerns around the biweekly pipeline run: the GitHub Actions workflow already generates the markdown report and auto-commits `docs/reports/` to the repo (`Commit report to repository`), while a `dbt run` step remains a placeholder until Module 4 monitoring; broader “learning path updater” behavior and automated testing are still in progress.
+- What it does: Focus for this phase includes wiring operational concerns around the monthly pipeline run: the GitHub Actions workflow already generates the markdown report and auto-commits `docs/reports/` to the repo (`Commit report to repository`), while a `dbt run` step remains a placeholder until Module 4 monitoring; broader “learning path updater” behavior and automated testing are still in progress.
 - Status: 🟡 In progress
 
 ### Module 5 — Multi-User App (Capstone)
@@ -106,22 +106,21 @@ flowchart TD
 | Transformations | dbt Core | 3-layer modeling: staging → intermediate → marts |
 | Pipeline | Python | Ingestion, Claude API integration, report generation |
 | Intelligence | Claude API (Anthropic) | Trend extraction, skill gap recommendations |
-| Automation | GitHub Actions | Biweekly pipeline (Sunday 06:00 UTC; even ISO weeks on schedule), CI/CD, report auto-commit |
+| Automation | GitHub Actions | Monthly pipeline (1st of the month, 06:00 UTC), CI/CD, report auto-commit |
 | Version Control | GitHub | Public portfolio repo |
 
 ---
 
-## Data Flow — Biweekly pipeline
+## Data Flow — Monthly pipeline
 
-1. **Trigger** — The workflow `.github/workflows/market_intelligence.yml` runs on a cron schedule (**Sunday 06:00 UTC**) or via **`workflow_dispatch`** (manual run from the Actions tab).
-2. **Biweekly gate** — On **scheduled** runs only, a shell step checks the **ISO week number**: if it is **odd**, the rest of the job is skipped (biweekly cost control). **Manual** runs always continue.
-3. **Repository setup** — Checkout (`actions/checkout@v4` with persisted credentials), **Python 3.12**, and **`pip install -e .`** install the `datapulse` package.
-4. **RSS ingestion** — **`python -m datapulse.collector`** (`collector.py`) fetches configured feeds and upserts rows into **`feed_items`** (failures in this step do not fail the job).
-5. **Signal extraction** — **`python -m datapulse.extractor`** (`extractor.py`) reads unprocessed items and writes **`market_signals`** via the Claude API.
-6. **dbt models** — **dbt Core** should refresh **staging → intermediate → marts** so `mart_skill_gap_analysis` and `mart_trend_summary` stay current. In CI today the **“Run dbt models”** step is a **placeholder** (comment only); run **`dbt run`** locally or add it to the workflow when ready.
-7. **Recommendations** — **`python -m datapulse.recommender`** (`recommender.py`) generates personalized rows in **`recommendations`** from marts and profile data. It is **not** part of the GitHub Actions workflow yet; run it via CLI when you need fresh recommendations before the report.
-8. **Report** — **`python -m datapulse.report`** (`report.py`) queries Supabase and writes **`docs/reports/YYYY-MM-DD.md`** (UTC date).
-9. **Publish** — The **“Commit report to repository”** step stages **`docs/reports/`**, commits if there are changes, and **`git push`**es to GitHub (using the Actions token), so the report is visible in the repo for review.
+1. **Trigger** — The workflow `.github/workflows/market_intelligence.yml` runs on a cron schedule (**1st of the month, 06:00 UTC**) or via **`workflow_dispatch`** (manual run from the Actions tab). The monthly cadence itself is the cost control — no extra application-level gating step is needed.
+2. **Repository setup** — Checkout (`actions/checkout@v4` with persisted credentials), **Python 3.12**, and **`pip install -e .`** install the `datapulse` package.
+3. **RSS ingestion** — **`python -m datapulse.collector`** (`collector.py`) fetches configured feeds and upserts rows into **`feed_items`** (failures in this step do not fail the job).
+4. **Signal extraction** — **`python -m datapulse.extractor`** (`extractor.py`) reads unprocessed items and writes **`market_signals`** via the Claude API.
+5. **dbt models** — **dbt Core** should refresh **staging → intermediate → marts** so `mart_skill_gap_analysis` and `mart_trend_summary` stay current. In CI today the **“Run dbt models”** step is a **placeholder** (comment only); run **`dbt run`** locally or add it to the workflow when ready.
+6. **Recommendations** — **`python -m datapulse.recommender`** (`recommender.py`) generates personalized rows in **`recommendations`** from marts and profile data. It is **not** part of the GitHub Actions workflow yet; run it via CLI when you need fresh recommendations before the report.
+7. **Report** — **`python -m datapulse.report`** (`report.py`) queries Supabase and writes **`docs/reports/YYYY-MM-DD.md`** (UTC date).
+8. **Publish** — The **“Commit report to repository”** step stages **`docs/reports/`**, commits if there are changes, and **`git push`**es to GitHub (using the Actions token), so the report is visible in the repo for review.
 
 ---
 
@@ -132,6 +131,6 @@ flowchart TD
 - **No LangChain / CrewAI / Airflow** — Plain Python plus the Claude API keeps the pipeline small, cheap, and explainable (see tech stack exclusions in the decision log).
 - **Hierarchical skills taxonomy** — Canonical `skills` with `parent_skill_id` (self-referencing FK) so market signals and user skills normalize to one vocabulary.
 - **Service role for pipeline writes** — Batch jobs use the Supabase **service role** key to bypass RLS for trusted writes (e.g. `market_signals`, `recommendations`); authenticated clients use RLS-scoped reads/updates as designed.
-- **Biweekly pipeline gate** — RSS + extraction (and thus much of the scheduled job) runs only on **even ISO weeks** to control API cost while the Actions workflow still triggers every **Sunday 06:00 UTC** (odd-week runs skip the heavy steps).
+- **Monthly pipeline cadence** — The Actions workflow triggers once a month (**1st, 06:00 UTC**) to control API cost; no separate application-level gate is needed since the cron itself sets the frequency.
 
 ---
